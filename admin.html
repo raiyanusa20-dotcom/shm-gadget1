@@ -20,8 +20,9 @@
         #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .login-card { background: white; padding: 35px; border-radius: 20px; width: 90%; max-width: 380px; text-align: center; }
 
-        .nav { display: flex; background: white; margin: -20px 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; position: sticky; top: 10px; z-index: 100; }
-        .tab { flex: 1; padding: 15px; border: none; background: none; font-weight: 700; font-size: 12px; color: #64748b; cursor: pointer; }
+        .nav { display: flex; background: white; margin: -20px 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
+        .nav::-webkit-scrollbar { display: none; }
+        .tab { flex: 1; min-width: 80px; padding: 15px; border: none; background: none; font-weight: 700; font-size: 11px; color: #64748b; cursor: pointer; white-space: nowrap; }
         .tab.active { color: var(--primary); background: #fff1f1; border-bottom: 3px solid var(--primary); }
 
         .container { padding: 0 15px; max-width: 600px; margin: auto; }
@@ -38,16 +39,19 @@
         .stock-item img { width: 100%; height: 100px; object-fit: contain; border-radius: 10px; }
         .status-toggle { width: 100%; padding: 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: 700; margin-top: 8px; cursor: pointer; }
 
-        input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; }
+        input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; font-size: 14px; }
         input:focus { border-color: var(--primary); }
-        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(255,0,0,0.2); }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(255,0,0,0.2); cursor: pointer; }
 
         .upload-area { min-height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; margin-bottom: 15px; padding: 10px; }
         .preview-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .preview-img { width: 80px; height: 80px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; }
 
-        /* STATUS COLORS */
         .status-select { background: #f8fafc; font-size: 12px; padding: 8px; border: 1px solid #cbd5e1; margin-top: 5px; cursor: pointer; }
+
+        /* CATEGORY SECTION STYLES */
+        .cat-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .cat-tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #475569; }
     </style>
 </head>
 <body>
@@ -68,6 +72,7 @@
     <nav class="nav">
         <button class="tab active" onclick="go(event, 'orders')">ORDERS</button>
         <button class="tab" onclick="go(event, 'stock')">STOCK</button>
+        <button class="tab" onclick="go(event, 'folders')">CATEGORIES</button>
         <button class="tab" onclick="go(event, 'add')">ADD ITEM</button>
     </nav>
 
@@ -80,6 +85,15 @@
             <div id="stockList" class="stock-grid"></div>
         </div>
 
+        <div id="folders" class="page">
+            <div class="card">
+                <h3 style="font-size: 14px; margin-bottom: 10px;">Create New Folder/Category</h3>
+                <input type="text" id="newCatName" placeholder="e.g. Smartwatch, Accessories">
+                <button class="submit-btn" style="padding: 12px;" onclick="addCategory()">+ CREATE FOLDER</button>
+            </div>
+            <div id="categoryList"></div>
+        </div>
+
         <div id="add" class="page">
             <div class="upload-area" onclick="document.getElementById('file').click()">
                 <div id="previewContainer" class="preview-container"></div>
@@ -89,6 +103,12 @@
                 </div>
                 <input type="file" id="file" hidden accept="image/*" multiple onchange="handleMultipleImages(this)">
             </div>
+            
+            <p style="font-size: 11px; font-weight: 700; margin-bottom: 5px; color: #64748b;">SELECT FOLDER / TYPE:</p>
+            <select id="pCategory">
+                <option value="General">General</option>
+            </select>
+
             <input type="text" id="pName" placeholder="Gadget Name">
             <input type="number" id="pPrice" placeholder="Price (৳)">
             <input type="text" id="pBrand" placeholder="Brand / Model">
@@ -122,6 +142,35 @@
             document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             e.currentTarget.classList.add('active');
+        }
+
+        // CATEGORY LOGIC
+        db.collection("categories").onSnapshot(snap => {
+            const list = document.getElementById('categoryList');
+            const dropdown = document.getElementById('pCategory');
+            list.innerHTML = "";
+            dropdown.innerHTML = '<option value="General">General</option>';
+            
+            snap.forEach(doc => {
+                const cat = doc.data().name;
+                list.innerHTML += `
+                    <div class="cat-item">
+                        <span class="cat-tag"><i class="fas fa-folder"></i> ${cat}</span>
+                        <i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="delCategory('${doc.id}')"></i>
+                    </div>`;
+                dropdown.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        });
+
+        async function addCategory() {
+            const name = document.getElementById('newCatName').value;
+            if(!name) return;
+            await db.collection("categories").add({ name: name });
+            document.getElementById('newCatName').value = "";
+        }
+
+        async function delCategory(id) {
+            if(confirm("Delete this folder?")) await db.collection("categories").doc(id).delete();
         }
 
         async function handleMultipleImages(input) {
@@ -161,11 +210,19 @@
         }
 
         async function publish() {
-            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
+            const n = document.getElementById('pName').value, 
+                  p = document.getElementById('pPrice').value,
+                  cat = document.getElementById('pCategory').value;
             if(!n || !p || imagesArray.length === 0) return alert("Fill all fields!");
             document.getElementById('saveBtn').innerText = "Uploading...";
             await db.collection("products").add({
-                title: n, price: p, image: imagesArray[0], image2: imagesArray[1] || "", image3: imagesArray[2] || "", inStock: true,
+                title: n, 
+                price: p, 
+                category: cat, // SAVING THE CATEGORY
+                image: imagesArray[0], 
+                image2: imagesArray[1] || "", 
+                image3: imagesArray[2] || "", 
+                inStock: true,
                 brand: document.getElementById('pBrand').value,
                 description: document.getElementById('pDesc').value,
                 date: Date.now()
@@ -173,7 +230,6 @@
             location.reload();
         }
 
-        // UPDATED LIVE ORDERS WITH MANUAL TRACKING STATUS
         db.collection("orders").orderBy("date","desc").onSnapshot(snap => {
             const list = document.getElementById('orderList');
             list.innerHTML = "";
@@ -183,12 +239,11 @@
                 list.innerHTML += `
                 <div class="card" style="border-left: 5px solid ${getStatusColor(currentStatus)}">
                     <div class="order-meta"><span>#${doc.id.substring(0,6)}</span> <span>${o.date}</span></div>
-                    <b style="font-size:15px;">${o.item}</b> <span style="color:var(--primary); font-weight:800;">৳${o.price}</span>
+                    <b style="font-size:15px;">${o.Product}</b> <span style="color:var(--primary); font-weight:800;">৳${o.Total}</span>
                     <div style="font-size:12px; margin-top:8px; color:#475569;">
-                        <i class="fas fa-user"></i> ${o.customer} <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.address}
+                        <i class="fas fa-user"></i> ${o.Customer} <br>
+                        <i class="fas fa-map-marker-alt"></i> ${o.Address}
                     </div>
-
                     <div style="margin-top:10px;">
                         <p style="font-size:10px; font-weight:bold; color:#64748b;">ORDER STATUS:</p>
                         <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
@@ -199,29 +254,26 @@
                             <option value="Cancelled" ${currentStatus=='Cancelled'?'selected':''}>❌ Cancelled</option>
                         </select>
                     </div>
-
                     <div class="btn-group">
-                        <a href="tel:${o.phone}" class="action-btn" style="background:#ecfdf5; color:#059669;"><i class="fas fa-phone"></i> CALL</a>
+                        <a href="tel:${o.Mobile}" class="action-btn" style="background:#ecfdf5; color:#059669;"><i class="fas fa-phone"></i> CALL</a>
                         <button onclick="delOrder('${doc.id}')" class="action-btn" style="background:#fff1f1; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             });
         });
 
-        // Functions for Status
         async function updateStatus(id, s) {
             await db.collection("orders").doc(id).update({ status: s });
-            alert("Status updated to " + s);
+            alert("Status updated!");
         }
 
         function getStatusColor(s) {
             if(s === 'Shipped') return '#3b82f6';
             if(s === 'Delivered') return '#10b981';
             if(s === 'Cancelled') return '#ef4444';
-            return '#f59e0b'; // Pending/Processing
+            return '#f59e0b';
         }
 
-        // LIVE STOCK MANAGER
         db.collection("products").onSnapshot(snap => {
             const list = document.getElementById('stockList');
             list.innerHTML = "";
@@ -231,44 +283,7 @@
                 list.innerHTML += `
                 <div class="stock-item" style="opacity:${isOut?0.5:1}">
                     <img src="${p.image}">
-                    <div style="font-size:11px; font-weight:700; margin:5px 0; height:30px; overflow:hidden;">${p.title}</div>
-                    <button class="status-toggle" onclick="toggleStock('${doc.id}', ${!p.inStock})" 
-                        style="background:${isOut?'#64748b':'#10b981'}; color:white;">
-                        ${isOut ? '🔴 STOCK OUT' : '🟢 IN STOCK'}
-                    </button>
-                    <i class="fas fa-times-circle" onclick="delProd('${doc.id}')" style="position:absolute; top:-5px; right:-5px; color:red; font-size:18px; background:white; border-radius:50%;"></i>
-                </div>`;
-            });
-        });
-
-        async function toggleStock(id, status) { await db.collection("products").doc(id).update({inStock: status}); }
-        async function delOrder(id) { if(confirm("Delete Order?")) await db.collection("orders").doc(id).delete(); }
-        async function delProd(id) { if(confirm("Delete Product?")) await db.collection("products").doc(id).delete(); }
-    </script>
-</body>
-</html>
-                    <div style="font-size:12px; margin-top:8px; color:#475569;">
-                        <i class="fas fa-user"></i> ${o.customer} <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.address}
-                    </div>
-                    <div class="btn-group">
-                        <a href="tel:${o.phone}" class="action-btn" style="background:#ecfdf5; color:#059669;"><i class="fas fa-phone"></i> CALL</a>
-                        <button onclick="delOrder('${doc.id}')" class="action-btn" style="background:#fff1f1; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            });
-        });
-
-        // LIVE STOCK MANAGER
-        db.collection("products").onSnapshot(snap => {
-            const list = document.getElementById('stockList');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                const isOut = p.inStock === false;
-                list.innerHTML += `
-                <div class="stock-item" style="opacity:${isOut?0.5:1}">
-                    <img src="${p.image}">
+                    <div style="font-size:10px; color:gray; margin-top:5px;">FOLDER: ${p.category || 'General'}</div>
                     <div style="font-size:11px; font-weight:700; margin:5px 0; height:30px; overflow:hidden;">${p.title}</div>
                     <button class="status-toggle" onclick="toggleStock('${doc.id}', ${!p.inStock})" 
                         style="background:${isOut?'#64748b':'#10b981'}; color:white;">
