@@ -14,8 +14,26 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --red: #ff0000; --bg: #f4f4f4; --green: #25D366; --dark: #1a1a1a; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        :root { 
+            --red: #ff0000; 
+            --bg: #f4f4f4; 
+            --green: #25D366; 
+            --dark: #1a1a1a; 
+            --card: #ffffff;
+            --text: #222222;
+            --border: #eeeeee;
+        }
+
+        /* DARK MODE DEFINITION */
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --border: #334155;
+            --dark: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; transition: background 0.3s; }
         
         #loader { position:fixed; width:100%; height:100%; background:#fff; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
         .spinner { width:60px; height:60px; border:4px solid #f3f3f3; border-top:4px solid var(--red); border-radius:50%; animation:spin 1s linear infinite; }
@@ -23,29 +41,32 @@
         @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
         .fade-out { opacity:0; transition:0.5s; pointer-events:none; }
 
-        body { background: var(--bg); color: #222; -webkit-tap-highlight-color: transparent; }
-        header { background: #fff; padding: 12px 15px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        body { background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; }
+        header { background: var(--card); padding: 12px 15px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
         .logo img { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--red); }
         
         .header-tools { display: flex; gap: 8px; align-items: center; }
-        .track-btn { background: var(--dark); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .track-btn { background: var(--dark); color: var(--card); border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
 
-        .search-bar { background: #eee; border-radius: 8px; display: flex; padding: 8px 12px; }
-        .search-bar input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
+        /* THEME TOGGLE BUTTON */
+        .theme-btn { background: var(--bg); border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+
+        .search-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; display: flex; padding: 8px 12px; }
+        .search-bar input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; color: var(--text); }
         
-        .cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 12px 15px; scrollbar-width: none; background: #fff; border-bottom: 1px solid #eee; }
+        .cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 12px 15px; scrollbar-width: none; background: var(--card); border-bottom: 1px solid var(--border); }
         .cat-scroll::-webkit-scrollbar { display: none; }
-        .cat-btn { padding: 6px 15px; background: #fff; border: 1.5px solid #ddd; border-radius: 20px; white-space: nowrap; font-size: 11px; font-weight: 600; cursor: pointer; color: #666; }
+        .cat-btn { padding: 6px 15px; background: var(--card); border: 1.5px solid var(--border); border-radius: 20px; white-space: nowrap; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text); }
         .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
 
         .container { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 80vh; }
-        .card { background: #fff; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
+        .card { background: var(--card); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; border: 1px solid var(--border); }
         .img-box { height: 140px; width: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .price { color: var(--red); font-weight: 700; font-size: 16px; margin-top: 5px; }
-        .title { font-size: 11px; color: #555; height: 30px; overflow: hidden; margin-bottom: 8px; }
+        .title { font-size: 11px; color: var(--text); height: 30px; overflow: hidden; margin-bottom: 8px; opacity: 0.8; }
         .out-badge { position: absolute; top: 8px; left: 8px; background: #000; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 4px; z-index: 5; }
         .gray { filter: grayscale(1); opacity: 0.5; }
         
@@ -54,47 +75,47 @@
         
         #fomo-toast {
             position: fixed; bottom: 85px; left: 15px;
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--card);
             backdrop-filter: blur(10px);
             padding: 10px 15px; border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             display: none; align-items: center; gap: 10px;
             z-index: 2000; animation: slideUp 0.6s ease;
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid var(--border);
             max-width: 260px;
         }
         @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
         .fomo-img { width: 35px; height: 35px; border-radius: 6px; object-fit: cover; background: #f0f0f0; }
-        .fomo-txt { font-size: 10px; color: #444; line-height: 1.3; }
-        .fomo-txt b { color: #000; font-size: 11px; }
+        .fomo-txt { font-size: 10px; color: var(--text); line-height: 1.3; }
+        .fomo-txt b { color: var(--text); font-size: 11px; }
 
-        #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2000; overflow-y:auto; }
-        .dv-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: #fff; }
+        #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; overflow-y:auto; }
+        .dv-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--card); }
         .dv-body { padding: 20px; }
         .dv-slider { display: flex; overflow-x: auto; snap-type: x mandatory; gap: 10px; margin-bottom: 15px; scrollbar-width: none; }
         .dv-slider img { width: 100%; flex-shrink: 0; snap-align: center; max-height: 320px; object-fit: contain; background: #f9f9f9; border-radius: 12px; }
 
-        .spec-table { margin: 15px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
-        .spec-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
-        .spec-row span { color: #777; }
+        .spec-table { margin: 15px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .spec-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .spec-row span { color: var(--text); opacity: 0.6; }
 
         .wa-float { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1500; text-decoration: none; }
         
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; }
-        .modal-box { background:#fff; width:92%; max-width: 400px; margin: 15% auto; padding: 25px; border-radius: 15px; text-align: center; position: relative; }
-        .modal-box input { width:100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .modal-box { background:var(--card); color: var(--text); width:92%; max-width: 400px; margin: 15% auto; padding: 25px; border-radius: 15px; text-align: center; position: relative; border: 1px solid var(--border); }
+        .modal-box input { width:100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; background: var(--bg); color: var(--text); }
         
-        .track-container { margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; text-align: left; border: 1px solid #eee; }
+        .track-container { margin-top: 20px; padding: 15px; background: var(--bg); border-radius: 12px; text-align: left; border: 1px solid var(--border); }
         .track-row { display: flex; justify-content: space-between; margin-bottom: 20px; position: relative; margin-top: 10px; }
-        .track-row::before { content: ''; position: absolute; top: 12px; left: 10px; right: 10px; height: 2px; background: #e2e8f0; z-index: 1; }
-        .step { width: 25px; height: 25px; border-radius: 50%; background: #e2e8f0; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; transition: 0.3s; }
-        .step.active { background: var(--green); box-shadow: 0 0 8px rgba(37, 211, 102, 0.4); }
+        .track-row::before { content: ''; position: absolute; top: 12px; left: 10px; right: 10px; height: 2px; background: var(--border); z-index: 1; }
+        .step { width: 25px; height: 25px; border-radius: 50%; background: var(--border); z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text); transition: 0.3s; }
+        .step.active { background: var(--green); color: #fff; box-shadow: 0 0 8px rgba(37, 211, 102, 0.4); }
         .step-label { font-size: 9px; text-align: center; margin-top: 5px; font-weight: 600; color: #64748b; }
         .step-label.active { color: var(--green); }
 
         .promo-row { display: flex; gap: 5px; margin: 10px 0; }
         .promo-row input { margin: 0; flex: 1; }
-        .apply-btn { background: var(--dark); color: #fff; border: none; padding: 0 15px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+        .apply-btn { background: var(--dark); color: var(--card); border: none; padding: 0 15px; border-radius: 8px; font-size: 11px; font-weight: 600; }
 
         footer { background: #1a1a1a; color: #fff; padding: 40px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
         .footer-about { max-width: 600px; margin: 0 auto 20px; line-height: 1.6; color: #bbb; }
@@ -120,6 +141,7 @@
         <div class="logo-row">
             <div class="logo"><img src="https://i.ibb.co.com/fd0vscq9/FB-IMG-1767802259536.jpg"> SHM GADGET ZONE</div>
             <div class="header-tools">
+                <button class="theme-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
                 <button class="track-btn" onclick="openTrack()">TRACK ORDER</button>
             </div>
         </div>
@@ -138,13 +160,13 @@
     <div id="trackModal" class="modal">
         <div class="modal-box">
             <h3 style="margin-bottom: 5px;">Track Your Order</h3>
-            <p style="font-size: 11px; color: #666; margin-bottom: 15px;">Enter mobile number used for purchase</p>
+            <p style="font-size: 11px; opacity: 0.6; margin-bottom: 15px;">Enter mobile number used for purchase</p>
             <input type="number" id="trackPhone" placeholder="01XXXXXXXXX">
             <button class="btn-red" onclick="trackOrder()" id="trackSearchBtn">CHECK STATUS</button>
             
             <div id="trackResult" style="display: none;">
                 <div class="track-container">
-                    <p style="font-size: 11px; color: #888;">Order Item:</p>
+                    <p style="font-size: 11px; opacity: 0.6;">Order Item:</p>
                     <b id="tProd" style="font-size: 13px;"></b>
                     <div class="track-row">
                         <div><div class="step" id="s1">1</div><p class="step-label" id="l1">Pending</p></div>
@@ -154,7 +176,7 @@
                     </div>
                 </div>
             </div>
-            <p style="margin-top:20px; font-size:12px; color:gray; cursor:pointer;" onclick="closeModal('trackModal')">Close</p>
+            <p style="margin-top:20px; font-size:12px; cursor:pointer;" onclick="closeModal('trackModal')">Close</p>
         </div>
     </div>
 
@@ -172,7 +194,7 @@
                 <div class="spec-row"><span>Brand</span><b id="dvBrand"></b></div>
                 <div class="spec-row"><span>Status</span><b id="dvStockStatus"></b></div>
             </div>
-            <p id="dvDesc" style="color:#666; font-size:13px; line-height:1.6; margin-bottom:20px; white-space: pre-wrap;"></p>
+            <p id="dvDesc" style="font-size:13px; line-height:1.6; margin-bottom:20px; white-space: pre-wrap;"></p>
             <button class="btn-red" style="height:50px; font-size:16px;" id="dvOrderBtn">ORDER ON WEBSITE</button>
             <button id="dvWABtn" class="btn-wa" style="height:50px; font-size:16px;"><i class="fab fa-whatsapp"></i> ORDER ON WHATSAPP</button>
         </div>
@@ -205,7 +227,7 @@
             <i class="fas fa-check-circle" style="color:var(--green); font-size:50px;"></i>
             <h2>Order Placed!</h2>
             <p style="font-size: 13px; margin: 10px 0;">We will call you soon to confirm.</p>
-            <div style="background:#f4f4f4; padding:10px; border-radius:8px; font-size:11px; margin-bottom:15px;">
+            <div style="background:var(--bg); padding:10px; border-radius:8px; font-size:11px; margin-bottom:15px;">
                 Order ID: <b id="newOrderID"></b>
             </div>
             <button class="btn-red" onclick="location.reload()">Back to Shop</button>
@@ -233,8 +255,22 @@
 
         let all = [], tempOrder = null, currentDelCharge = 80, currentCat = 'All', discount = 0;
 
+        // DARK MODE SCRIPT
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            localStorage.setItem('theme', targetTheme);
+            document.getElementById('themeBtn').innerHTML = targetTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+        
+        // APPLY THEME ON LOAD
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
         window.onload = () => { 
             setTimeout(() => document.getElementById('loader').classList.add('fade-out'), 800); 
+            document.getElementById('themeBtn').innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
             startFomo(); 
         };
 
