@@ -7,6 +7,7 @@
     <meta name="google-site-verification" content="yDlfKlmL3CReRirK-a3wfpsXj_UacBRCikj-XTQsshg" />
     <title>SHM GADGET ZONE</title>
     <meta name="description" content="SHM Gadget Zone - Premium smartwatches and gadgets in Bangladesh.">
+    <meta name="keywords" content="smartwatch BD, water accessories, smart gadgets Bangladesh, mobile accessories, SHM Gadget Zone">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -34,6 +35,12 @@
         .search-bar { background: #eee; border-radius: 8px; display: flex; padding: 8px 12px; }
         .search-bar input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
         
+        /* Category Bar Styling */
+        .cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 12px 15px; scrollbar-width: none; background: #fff; border-bottom: 1px solid #eee; }
+        .cat-scroll::-webkit-scrollbar { display: none; }
+        .cat-btn { padding: 6px 15px; background: #fff; border: 1.5px solid #ddd; border-radius: 20px; white-space: nowrap; font-size: 11px; font-weight: 600; cursor: pointer; color: #666; }
+        .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
+
         .container { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 80vh; }
         .card { background: #fff; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
         .img-box { height: 140px; width: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -46,7 +53,6 @@
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
         
-        /* FOMO NOTIFICATION STYLE */
         #fomo-toast {
             position: fixed; bottom: 85px; left: 15px;
             background: rgba(255, 255, 255, 0.85);
@@ -69,13 +75,16 @@
         .dv-slider { display: flex; overflow-x: auto; snap-type: x mandatory; gap: 10px; margin-bottom: 15px; scrollbar-width: none; }
         .dv-slider img { width: 100%; flex-shrink: 0; snap-align: center; max-height: 320px; object-fit: contain; background: #f9f9f9; border-radius: 12px; }
 
+        .spec-table { margin: 15px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+        .spec-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .spec-row span { color: #777; }
+
         .wa-float { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1500; text-decoration: none; }
         
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; }
         .modal-box { background:#fff; width:92%; max-width: 400px; margin: 15% auto; padding: 25px; border-radius: 15px; text-align: center; position: relative; }
         .modal-box input { width:100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
         
-        /* TRACKING UI */
         .track-container { margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; text-align: left; border: 1px solid #eee; }
         .track-row { display: flex; justify-content: space-between; margin-bottom: 20px; position: relative; margin-top: 10px; }
         .track-row::before { content: ''; position: absolute; top: 12px; left: 10px; right: 10px; height: 2px; background: #e2e8f0; z-index: 1; }
@@ -84,7 +93,9 @@
         .step-label { font-size: 9px; text-align: center; margin-top: 5px; font-weight: 600; color: #64748b; }
         .step-label.active { color: var(--green); }
 
-        footer { background: #1a1a1a; color: #fff; padding: 30px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
+        footer { background: #1a1a1a; color: #fff; padding: 40px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
+        .footer-about { max-width: 600px; margin: 0 auto 20px; line-height: 1.6; color: #bbb; }
+        .footer-about h4 { color: #fff; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -115,9 +126,260 @@
         </div>
     </header>
 
+    <div class="cat-scroll" id="catBar">
+        <button class="cat-btn active" onclick="filterCat('All', this)">All Gadgets</button>
+    </div>
+
     <div class="container" id="prodGrid"></div>
 
     <div id="trackModal" class="modal">
+        <div class="modal-box">
+            <h3 style="margin-bottom: 5px;">Track Your Order</h3>
+            <p style="font-size: 11px; color: #666; margin-bottom: 15px;">Enter mobile number used for purchase</p>
+            <input type="number" id="trackPhone" placeholder="01XXXXXXXXX">
+            <button class="btn-red" onclick="trackOrder()" id="trackSearchBtn">CHECK STATUS</button>
+            
+            <div id="trackResult" style="display: none;">
+                <div class="track-container">
+                    <p style="font-size: 11px; color: #888;">Order Item:</p>
+                    <b id="tProd" style="font-size: 13px;"></b>
+                    <div class="track-row">
+                        <div><div class="step" id="s1">1</div><p class="step-label" id="l1">Pending</p></div>
+                        <div><div class="step" id="s2">2</div><p class="step-label" id="l2">Process</p></div>
+                        <div><div class="step" id="s3">3</div><p class="step-label" id="l3">Shipped</p></div>
+                        <div><div class="step" id="s4">4</div><p class="step-label" id="l4">Delivered</p></div>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top:20px; font-size:12px; color:gray; cursor:pointer;" onclick="closeModal('trackModal')">Close</p>
+        </div>
+    </div>
+
+    <a href="https://api.whatsapp.com/send?phone=8801313607293" target="_blank" class="wa-float">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <div id="detailView">
+        <div class="dv-header" onclick="closeDetail()"><i class="fas fa-arrow-left"></i> <b>Product Details</b></div>
+        <div class="dv-body">
+            <div class="dv-slider" id="dvSlider"></div>
+            <h2 id="dvTitle"></h2>
+            <div id="dvPrice" style="color:var(--red); font-size:22px; font-weight:700;"></div>
+            <div class="spec-table">
+                <div class="spec-row"><span>Brand</span><b id="dvBrand"></b></div>
+                <div class="spec-row"><span>Status</span><b id="dvStockStatus"></b></div>
+            </div>
+            <p id="dvDesc" style="color:#666; font-size:13px; line-height:1.6; margin-bottom:20px; white-space: pre-wrap;"></p>
+            <button class="btn-red" style="height:50px; font-size:16px;" id="dvOrderBtn">ORDER ON WEBSITE</button>
+            <button id="dvWABtn" class="btn-wa" style="height:50px; font-size:16px;"><i class="fab fa-whatsapp"></i> ORDER ON WHATSAPP</button>
+        </div>
+    </div>
+
+    <div id="orderModal" class="modal">
+        <div class="modal-box">
+            <h3>Shipping Details</h3>
+            <input type="text" id="custName" placeholder="Full Name">
+            <input type="tel" id="custPhone" placeholder="Phone Number" oninput="this.value = this.value.replace(/[^0-9]/g, '');" maxlength="11">
+            <input type="text" id="custAddr" placeholder="Address">
+            <div class="delivery-options" style="text-align: left; margin: 10px 0; font-size: 13px;">
+                <label style="display: block; margin-bottom: 5px;"><input type="radio" name="delArea" value="80" onclick="calcTotal(80)" checked> Inside Dhaka (৳80)</label>
+                <label style="display: block;"><input type="radio" name="delArea" value="150" onclick="calcTotal(150)"> Outside Dhaka (৳150)</label>
+            </div>
+            <div class="total-box" style="margin: 15px 0; font-weight: 700;">Total: <b id="finalPrice" style="color:var(--red);">৳ 0</b></div>
+            <button class="btn-red" id="submitBtn" onclick="submitOrder()">Confirm Order</button>
+            <p onclick="closeModal('orderModal')" style="cursor:pointer; margin-top:10px; font-size:12px;">Cancel</p>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal">
+        <div class="modal-box">
+            <i class="fas fa-check-circle" style="color:var(--green); font-size:50px;"></i>
+            <h2>Order Placed!</h2>
+            <p style="font-size: 13px; margin: 10px 0;">We will call you soon to confirm.</p>
+            <div style="background:#f4f4f4; padding:10px; border-radius:8px; font-size:11px; margin-bottom:15px;">
+                Order ID: <b id="newOrderID"></b>
+            </div>
+            <button class="btn-red" onclick="location.reload()">Back to Shop</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-about">
+            <h4>About Us</h4>
+            <p>Welcome to <b>SHM Gadget Zone</b>, your number one source for all things <b>Smartwatches</b> and <b>Mobile Accessories in Bangladesh</b>. We're dedicated to giving you the very best of <b>Smart Gadgets</b> and <b>Water Accessories</b>.</p>
+        </div>
+        <p>raiyanusa20@gmail.com | 01313607293</p>
+        <p style="color:#666; margin-top:5px;">2026 - SHM Gadget Zone</p>
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjb15aH65juySeyZUA4yTPrLx7HosP1Cs",
+            authDomain: "shm-gadget-zone-f3769.firebaseapp.com",
+            projectId: "shm-gadget-zone-f3769",
+            appId: "1:863331658170:web:f045742523fd683e469583"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let all = [], tempOrder = null, currentDelCharge = 80, currentCat = 'All';
+
+        window.onload = () => { 
+            setTimeout(() => document.getElementById('loader').classList.add('fade-out'), 800); 
+            startFomo(); 
+        };
+
+        // Categories from Admin
+        db.collection("categories").onSnapshot(s => {
+            const bar = document.getElementById('catBar');
+            bar.innerHTML = '<button class="cat-btn active" onclick="filterCat(\'All\', this)">All Gadgets</button>';
+            s.forEach(doc => { 
+                bar.innerHTML += `<button class="cat-btn" onclick="filterCat('${doc.data().name}', this)">${doc.data().name}</button>`; 
+            });
+        });
+
+        db.collection("products").onSnapshot(s => {
+            all = [];
+            s.forEach(d => { let p = d.data(); p.id = d.id; all.push(p); });
+            show(all);
+        });
+
+        function filterCat(name, btn) {
+            currentCat = name;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            show(all);
+        }
+
+        function startFomo() {
+            const names = ["raiyan", "riya", "shifa", "tonoy", "habib", "zara", "rumana", "Sabbir", "Anika", "Tanvir", "Mitu", "Rakib", "Sumaiya"];
+            const locs = ["Dhaka", "Chittagong", "Uttara", "Mirpur", "Sylhet", "Gazipur", "Rajshahi"];
+            setInterval(() => {
+                if(all.length === 0) return;
+                const randomName = names[Math.floor(Math.random() * names.length)];
+                const randomLoc = locs[Math.floor(Math.random() * locs.length)];
+                const randomProd = all[Math.floor(Math.random() * all.length)];
+                document.getElementById('fomo-img').src = randomProd.image;
+                document.getElementById('fomo-name').innerText = randomName.charAt(0).toUpperCase() + randomName.slice(1) + " from " + randomLoc;
+                document.getElementById('fomo-product').innerText = "\nJust bought " + randomProd.title.substring(0, 25) + "...";
+                const toast = document.getElementById('fomo-toast');
+                toast.style.display = 'flex';
+                setTimeout(() => { toast.style.display = 'none'; }, 6000);
+            }, 30000);
+        }
+
+        function show(data) {
+            const g = document.getElementById('prodGrid');
+            const filtered = currentCat === 'All' ? data : data.filter(x => x.category === currentCat);
+            g.innerHTML = filtered.map(p => {
+                const isOut = p.inStock === false;
+                return `<div class="card">
+                    ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
+                    <div class="img-box" onclick="openDetail('${p.id}')"><img src="${p.image}" class="${isOut ? 'gray' : ''}"></div>
+                    <div class="price">৳ ${p.price}</div>
+                    <div class="title">${p.title}</div>
+                    <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">${isOut ? 'STOCK OUT' : 'BUY NOW'}</button>
+                </div>`;
+            }).join('');
+        }
+
+        function openDetail(id) {
+            const p = all.find(x => x.id === id);
+            const isOut = p.inStock === false;
+            const slider = document.getElementById('dvSlider');
+            slider.innerHTML = `<img src="${p.image}">`;
+            if(p.image2) slider.innerHTML += `<img src="${p.image2}">`;
+            if(p.image3) slider.innerHTML += `<img src="${p.image3}">`;
+            document.getElementById('dvTitle').innerText = p.title;
+            document.getElementById('dvPrice').innerText = "৳ " + p.price;
+            document.getElementById('dvBrand').innerText = p.brand || "Premium";
+            document.getElementById('dvStockStatus').innerText = isOut ? "Out of Stock" : "Available";
+            document.getElementById('dvDesc').innerText = p.description || "No details.";
+            const orderBtn = document.getElementById('dvOrderBtn');
+            orderBtn.disabled = isOut;
+            orderBtn.onclick = () => { closeDetail(); openOrder(p.id); };
+            document.getElementById('detailView').style.display = 'block';
+        }
+
+        function closeDetail() { document.getElementById('detailView').style.display = 'none'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function openOrder(id) {
+            tempOrder = all.find(x => x.id === id);
+            document.getElementById('orderModal').style.display = 'block';
+            calcTotal(80);
+        }
+
+        function calcTotal(charge) {
+            currentDelCharge = charge;
+            const total = parseInt(tempOrder.price) + charge;
+            document.getElementById('finalPrice').innerText = "৳ " + total;
+        }
+
+        function openTrack() { 
+            document.getElementById('trackModal').style.display = 'block'; 
+            document.getElementById('trackResult').style.display = 'none';
+        }
+
+        async function trackOrder() {
+            const ph = document.getElementById('trackPhone').value.trim();
+            if(!ph) return alert("Enter your phone number");
+            const btn = document.getElementById('trackSearchBtn');
+            btn.innerText = "Searching...";
+            try {
+                const snap = await db.collection("orders").where("Mobile", "==", ph).get();
+                if(snap.empty) {
+                    alert("No order found!");
+                    btn.innerText = "CHECK STATUS";
+                    return;
+                }
+                const orders = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+                const o = orders[0];
+                const status = o.status || "Pending";
+                document.getElementById('trackResult').style.display = 'block';
+                document.getElementById('tProd').innerText = o.Product;
+                const steps = ["Pending", "Processing", "Shipped", "Delivered"];
+                const currentIdx = steps.indexOf(status);
+                for(let i=1; i<=4; i++) {
+                    const s = document.getElementById('s'+i);
+                    const l = document.getElementById('l'+i);
+                    if(i-1 <= currentIdx) {
+                        s.classList.add('active');
+                        l.classList.add('active');
+                        s.innerHTML = '<i class="fas fa-check"></i>';
+                    } else {
+                        s.classList.remove('active');
+                        l.classList.remove('active');
+                        s.innerHTML = i;
+                    }
+                }
+            } catch(e) { alert("Error connecting..."); }
+            btn.innerText = "CHECK STATUS";
+        }
+
+        async function submitOrder() {
+            const n = document.getElementById('custName').value, ph = document.getElementById('custPhone').value, ad = document.getElementById('custAddr').value;
+            
+            // STRICT VALIDATION
+            if(!n || !ph || !ad) return alert("Fill all fields!");
+            if(ph.length !== 11) return alert("Phone number must be exactly 11 digits!");
+
+            document.getElementById('submitBtn').disabled = true;
+            const totalAmount = parseInt(tempOrder.price) + currentDelCharge;
+            const orderData = { Product: tempOrder.title, Total: totalAmount, Customer: n, Mobile: ph, Address: ad, Date: new Date().toLocaleString(), status: "Pending" };
+            const docRef = await db.collection("orders").add(orderData);
+            document.getElementById('newOrderID').innerText = docRef.id.substring(0,8).toUpperCase();
+            document.getElementById('orderModal').style.display = 'none';
+            document.getElementById('successModal').style.display = 'block';
+        }
+
+        function search() {
+            const q = document.getElementById('find').value.toLowerCase();
+            show(all.filter(x => x.title.toLowerCase().includes(q)));
+        }
+    </script>
+</body>
+</html>
         <div class="modal-box">
             <h3 style="margin-bottom: 5px;">Track Your Order</h3>
             <p style="font-size: 11px; color: #666; margin-bottom: 15px;">Enter mobile number used for purchase</p>
