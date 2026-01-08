@@ -32,27 +32,19 @@
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
         
-        /* Detail View Styles */
         #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2000; overflow-y:auto; }
         .dv-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: #fff; }
         .dv-body { padding: 20px; }
         .dv-img { width: 100%; max-height: 320px; object-fit: contain; margin-bottom: 15px; }
         .spec-table { background: #f9f9f9; padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 13px; }
         .spec-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-        
-        /* Floating WhatsApp Button */
         .wa-float { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1500; text-decoration: none; }
-        
-        /* Modal Styles */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; }
         .modal-box { background:#fff; width:90%; max-width: 400px; margin: 15% auto; padding: 25px; border-radius: 15px; text-align: center; }
         .modal-box input { width:100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
-        
-        /* Delivery Options Styles */
         .delivery-options { margin: 15px 0; background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: left; }
         .del-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; cursor: pointer; font-size: 14px; }
         .total-box { background: #fffde7; padding: 12px; border-radius: 8px; border: 1px dashed #fbc02d; margin: 15px 0; text-align: center; }
-
         footer { background: #1a1a1a; color: #fff; padding: 30px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
     </style>
 </head>
@@ -94,26 +86,17 @@
     <div id="orderModal" class="modal">
         <div class="modal-box">
             <h3 style="margin-bottom:15px;">Shipping Details</h3>
-            
             <input type="text" id="custName" placeholder="Your Full Name">
             <input type="text" id="custPhone" placeholder="Mobile Number">
             <input type="text" id="custAddr" placeholder="Full Delivery Address">
-
             <div class="delivery-options">
                 <p style="font-size: 11px; font-weight: 700; color: #888;">SELECT DELIVERY AREA:</p>
-                <label class="del-row">
-                    <input type="radio" name="delArea" value="80" onclick="calcTotal(80)" checked> Inside Dhaka (৳80)
-                </label>
-                <label class="del-row">
-                    <input type="radio" name="delArea" value="150" onclick="calcTotal(150)"> Outside Dhaka (৳150)
-                </label>
+                <label class="del-row"><input type="radio" name="delArea" value="80" onclick="calcTotal(80)" checked> Inside Dhaka (৳80)</label>
+                <label class="del-row"><input type="radio" name="delArea" value="150" onclick="calcTotal(150)"> Outside Dhaka (৳150)</label>
             </div>
-
             <div class="total-box">
-                <span style="font-size: 14px;">Total to Pay: </span>
-                <b id="finalPrice" style="font-size: 18px; color: var(--red);">৳ 0</b>
+                <span style="font-size: 14px;">Total to Pay: </span><b id="finalPrice" style="font-size: 18px; color: var(--red);">৳ 0</b>
             </div>
-
             <button class="btn-red" id="submitBtn" style="height:50px; font-size:16px; margin-top:10px;" onclick="submitOrder()">Confirm Order</button>
             <p style="margin-top:15px; font-size:12px; color:gray; cursor:pointer;" onclick="document.getElementById('orderModal').style.display='none'">Cancel</p>
         </div>
@@ -123,7 +106,7 @@
         <div class="modal-box">
             <i class="fas fa-check-circle" style="color:var(--green); font-size:60px; margin-bottom:15px;"></i>
             <h2>Order Success!</h2>
-            <p style="margin: 15px 0; color:#555;">Thank you for your order! We will contact you soon.</p>
+            <p>Thank you for your order! We will contact you soon.</p>
             <button class="btn-red" onclick="location.reload()">Great, Thank You!</button>
         </div>
     </div>
@@ -131,11 +114,10 @@
     <footer>
         <div style="max-width: 600px; margin: 0 auto; border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px;">
             <h4 style="color: var(--red); margin-bottom: 10px;">SHOP POLICIES</h4>
-            <p style="margin-bottom: 8px;"><b>Delivery:</b> Dhaka ৳80 (1-2 days) | Outside Dhaka ৳150 (2-3 days)</p>
-            <p style="color: #bbb; font-size: 11px;">*Note: Unboxing video is mandatory for any return or damage claims.*</p>
+            <p><b>Delivery:</b> Dhaka ৳80 | Outside Dhaka ৳150</p>
         </div>
         <div>raiyanusa20@gmail.com | 01313607293</div>
-        <div style="color:#666; margin-top:5px;">2026 - Copyright RAIYAN | SHM Gadget Zone</div>
+        <div style="color:#666; margin-top:5px;">2026 - SHM Gadget Zone</div>
     </footer>
 
     <script>
@@ -160,22 +142,16 @@
             const g = document.getElementById('prodGrid');
             g.innerHTML = data.map(p => {
                 const isOut = p.inStock === false;
-                return `
-                <div class="card">
+                return `<div class="card">
                     ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
-                    <div class="img-box" onclick="openDetail('${p.id}')">
-                        <img src="${p.image}" class="${isOut ? 'gray' : ''}">
-                    </div>
+                    <div class="img-box" onclick="openDetail('${p.id}')"><img src="${p.image}" class="${isOut ? 'gray' : ''}"></div>
                     <div class="price">৳ ${p.price}</div>
                     <div class="title">${p.title}</div>
-                    <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">
-                        ${isOut ? 'STOCK OUT' : 'BUY NOW'}
-                    </button>
+                    <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">${isOut ? 'STOCK OUT' : 'BUY NOW'}</button>
                 </div>`;
             }).join('');
         }
 
-        // --- DETAIL VIEW LOGIC ---
         function openDetail(id) {
             const p = all.find(x => x.id === id);
             const isOut = p.inStock === false;
@@ -187,24 +163,25 @@
             document.getElementById('dvDesc').innerText = p.description || "Premium quality gadget.";
             
             const orderBtn = document.getElementById('dvOrderBtn');
-            orderBtn.innerText = isOut ? "OUT OF STOCK" : "ORDER ON WEBSITE";
             orderBtn.disabled = isOut;
             orderBtn.onclick = () => { closeDetail(); openOrder(p.id); };
+
+            document.getElementById('dvWABtn').onclick = () => {
+                const msg = encodeURIComponent(`Hello SHM Gadget Zone, I want to order: ${p.title} - Price: ${p.price} TK`);
+                window.open(`https://api.whatsapp.com/send?phone=8801313607293&text=${msg}`, '_blank');
+            };
 
             document.getElementById('detailView').style.display = 'block';
         }
 
         function closeDetail() { document.getElementById('detailView').style.display = 'none'; }
 
-        // --- ORDER LOGIC WITH DELIVERY CHARGE ---
         function openOrder(id) {
             tempOrder = all.find(x => x.id === id);
             document.getElementById('orderModal').style.display = 'block';
-            // Default to Inside Dhaka (80)
             calcTotal(80);
         }
 
-        // New function to update total bill dynamically
         function calcTotal(charge) {
             currentDelCharge = charge;
             const total = parseInt(tempOrder.price) + charge;
@@ -215,70 +192,30 @@
             const n = document.getElementById('custName').value;
             const ph = document.getElementById('custPhone').value;
             const ad = document.getElementById('custAddr').value;
-            const btn = document.getElementById('submitBtn');
-
             if(!n || !ph || !ad) return alert("Please fill all details!");
 
-            btn.disabled = true;
-            btn.innerText = "Processing...";
-
-            // Calculate Final Totals
+            document.getElementById('submitBtn').disabled = true;
             const totalAmount = parseInt(tempOrder.price) + currentDelCharge;
-            const area = currentDelCharge === 80 ? "Inside Dhaka" : "Outside Dhaka";
-
+            
             const orderData = {
-                item: tempOrder.title,
-                price: tempOrder.price,
-                delivery: currentDelCharge,
-                total: totalAmount,
-                area: area,
-                customer: n,
-                phone: ph,
-                address: ad,
-                date: new Date().toLocaleString(),
-                status: "Pending"
+                Product: tempOrder.title,
+                Total: totalAmount,
+                Customer: n,
+                Mobile: ph,
+                Address: ad,
+                Date: new Date().toLocaleString()
             };
 
             try {
-                // 1. Save to Firebase
                 await db.collection("orders").add(orderData);
-
-                // 2. Send System Email (Formspree)
                 await fetch("https://formspree.io/f/mgovgpbg", {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)
                 });
-
                 document.getElementById('orderModal').style.display = 'none';
                 document.getElementById('successModal').style.display = 'block';
             } catch (err) {
-                alert("Order saved! Please check admin panel.");
-                document.getElementById('orderModal').style.display = 'none';
-                document.getElementById('successModal').style.display = 'block';
-            }
-        }
-
-        function search() {
-            const q = document.getElementById('find').value.toLowerCase();
-            show(all.filter(x => x.title.toLowerCase().includes(q)));
-        }
-    </script>
-</body>
-</html>
-                        Customer_Name: n,
-                        Mobile: ph,
-                        Address: ad,
-                        Product: tempOrder.title,
-                        Price: tempOrder.price
-                    })
-                });
-
-                // 3. Success
-                document.getElementById('orderModal').style.display = 'none';
-                document.getElementById('successModal').style.display = 'block';
-            } catch (err) {
-                alert("Order saved, but email notification failed. Please check your admin panel.");
                 document.getElementById('orderModal').style.display = 'none';
                 document.getElementById('successModal').style.display = 'block';
             }
