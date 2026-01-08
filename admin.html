@@ -17,11 +17,9 @@
 
         header { background: var(--dark); color: white; padding: 25px; text-align: center; border-radius: 0 0 25px 25px; }
         
-        /* Persistent Login Overlay */
         #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .login-card { background: white; padding: 35px; border-radius: 20px; width: 90%; max-width: 380px; text-align: center; }
 
-        /* Navigation */
         .nav { display: flex; background: white; margin: -20px 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; position: sticky; top: 10px; z-index: 100; }
         .tab { flex: 1; padding: 15px; border: none; background: none; font-weight: 700; font-size: 12px; color: #64748b; cursor: pointer; }
         .tab.active { color: var(--primary); background: #fff1f1; border-bottom: 3px solid var(--primary); }
@@ -30,25 +28,24 @@
         .page { display: none; }
         .page.active { display: block; }
 
-        /* Order Cards */
         .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; position: relative; }
         .order-meta { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
         .btn-group { display: flex; gap: 10px; margin-top: 12px; }
         .action-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
 
-        /* Stock Grid */
         .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .stock-item { background: white; padding: 10px; border-radius: 15px; text-align: center; border: 1px solid #e2e8f0; position: relative; }
         .stock-item img { width: 100%; height: 100px; object-fit: contain; border-radius: 10px; }
         .status-toggle { width: 100%; padding: 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: 700; margin-top: 8px; cursor: pointer; }
 
-        /* Form */
         input, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; }
         input:focus { border-color: var(--primary); }
         .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(255,0,0,0.2); }
 
-        .upload-area { height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; margin-bottom: 15px; overflow: hidden; }
-        #prev { width: 100%; height: 100%; object-fit: contain; }
+        /* MULTI-UPLOAD AREA */
+        .upload-area { min-height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; margin-bottom: 15px; padding: 10px; }
+        .preview-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .preview-img { width: 80px; height: 80px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -83,12 +80,12 @@
 
         <div id="add" class="page">
             <div class="upload-area" onclick="document.getElementById('file').click()">
-                <img id="prev" style="display:none;">
+                <div id="previewContainer" class="preview-container"></div>
                 <div id="prompt" style="text-align:center; color:#94a3b8;">
                     <i class="fas fa-cloud-upload-alt" style="font-size:30px; margin-bottom:8px;"></i>
-                    <p style="font-size:12px; font-weight:600;">Tap to Upload Photo</p>
+                    <p style="font-size:12px; font-weight:600;">Tap to Upload (Max 3)</p>
                 </div>
-                <input type="file" id="file" hidden accept="image/*" onchange="handleImage(this)">
+                <input type="file" id="file" hidden accept="image/*" multiple onchange="handleMultipleImages(this)">
             </div>
             <input type="text" id="pName" placeholder="Gadget Name">
             <input type="number" id="pPrice" placeholder="Price (৳)">
@@ -107,9 +104,10 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        let finalBase64 = "";
+        
+        // Storage for up to 3 compressed images
+        let imagesArray = [];
 
-        // AUTH
         if(sessionStorage.getItem("admin_auth") !== "true") document.getElementById('loginOverlay').style.display='flex';
         function verifyAdmin() {
             if(document.getElementById('adminPass').value === "shm2026") {
@@ -125,33 +123,58 @@
             e.currentTarget.classList.add('active');
         }
 
-        // IMAGE PROCESSING (AUTO-COMPRESS)
-        function handleImage(input) {
-            const file = input.files[0];
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = e => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = 600; canvas.height = (img.height/img.width)*600;
-                    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-                    finalBase64 = canvas.toDataURL("image/jpeg", 0.6);
-                    document.getElementById('prev').src = finalBase64;
-                    document.getElementById('prev').style.display='block';
-                    document.getElementById('prompt').style.display='none';
-                }
+        // NEW: HANDLE MULTIPLE IMAGES
+        async function handleMultipleImages(input) {
+            const files = Array.from(input.files).slice(0, 3);
+            imagesArray = [];
+            document.getElementById('previewContainer').innerHTML = "";
+            document.getElementById('prompt').style.display = 'none';
+
+            for (let file of files) {
+                const b64 = await compress(file);
+                imagesArray.push(b64);
+                
+                const img = document.createElement('img');
+                img.src = b64;
+                img.className = 'preview-img';
+                document.getElementById('previewContainer').appendChild(img);
             }
+        }
+
+        function compress(file) {
+            return new Promise(resolve => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = e => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext("2d");
+                        const scale = 600 / img.width;
+                        canvas.width = 600; 
+                        canvas.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL("image/jpeg", 0.6));
+                    }
+                }
+            });
         }
 
         async function publish() {
             const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
-            if(!n || !p || !finalBase64) return alert("Fill all fields!");
+            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields and add at least 1 image!");
+            
             document.getElementById('saveBtn').innerText = "Uploading...";
+            document.getElementById('saveBtn').disabled = true;
+
             await db.collection("products").add({
-                title: n, price: p, image: finalBase64, inStock: true,
+                title: n, 
+                price: p, 
+                image: imagesArray[0],           // Primary Image
+                image2: imagesArray[1] || "",    // Optional Image 2
+                image3: imagesArray[2] || "",    // Optional Image 3
+                inStock: true,
                 brand: document.getElementById('pBrand').value,
                 description: document.getElementById('pDesc').value,
                 date: Date.now()
@@ -204,7 +227,6 @@
         async function toggleStock(id, status) { await db.collection("products").doc(id).update({inStock: status}); }
         async function delOrder(id) { if(confirm("Delete Order?")) await db.collection("orders").doc(id).delete(); }
         async function delProd(id) { if(confirm("Delete Product?")) await db.collection("products").doc(id).delete(); }
-        function wa(p, i) { window.open(`https://api.whatsapp.com/send?phone=88${p}&text=Confirming order for ${i}`); }
     </script>
 </body>
 </html>
