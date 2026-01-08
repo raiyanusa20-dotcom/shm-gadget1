@@ -3,17 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <meta name="google-site-verification" content="yDlfKlmL3CReRirK-a3wfpsXj_UacBRCikj-XTQsshg" />
-    
     <title>SHM GADGET ZONE</title>
-    
-    <meta name="description" content="SHM Gadget Zone - Premium smartwatches and gadgets in Bangladesh. Best quality and fast delivery.">
-    <meta name="keywords" content="SHM Gadget Zone, Smartwatch Price BD, Gadgets Bangladesh, Raiyan Gadgets">
-
+    <meta name="description" content="SHM Gadget Zone - Premium smartwatches and gadgets in Bangladesh.">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
@@ -21,47 +15,32 @@
         :root { --red: #ff0000; --bg: #f4f4f4; --green: #25D366; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background: var(--bg); color: #222; -webkit-tap-highlight-color: transparent; }
-
-        /* HEADER */
         header { background: #fff; padding: 12px 15px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
         .logo img { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--red); }
         .search-bar { background: #eee; border-radius: 8px; display: flex; padding: 8px 12px; }
         .search-bar input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
-
-        /* PRODUCT GRID */
         .container { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 80vh; }
         .card { background: #fff; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
         .img-box { height: 140px; width: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .price { color: var(--red); font-weight: 700; font-size: 16px; margin-top: 5px; }
         .title { font-size: 11px; color: #555; height: 30px; overflow: hidden; margin-bottom: 8px; }
-
-        /* STOCK OUT BADGE */
         .out-badge { position: absolute; top: 8px; left: 8px; background: #000; color: #fff; font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 4px; z-index: 5; }
         .gray { filter: grayscale(1); opacity: 0.5; }
-
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
-        .btn-red:disabled { background: #ccc; cursor: not-allowed; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
-
-        /* DETAIL VIEW */
         #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2000; overflow-y:auto; }
         .dv-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: #fff; }
         .dv-body { padding: 20px; }
         .dv-img { width: 100%; max-height: 320px; object-fit: contain; margin-bottom: 15px; }
         .spec-table { background: #f9f9f9; padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 13px; }
         .spec-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-
-        /* FLOATING WA BUTTON */
         .wa-float { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1500; text-decoration: none; }
-
-        /* MODALS */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; }
         .modal-box { background:#fff; width:90%; max-width: 400px; margin: 25% auto; padding: 25px; border-radius: 15px; text-align: center; }
         .modal-box input { width:100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
-
         footer { background: #1a1a1a; color: #fff; padding: 30px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
     </style>
 </head>
@@ -106,8 +85,8 @@
             <input type="text" id="custName" placeholder="Your Full Name">
             <input type="text" id="custPhone" placeholder="Mobile Number">
             <input type="text" id="custAddr" placeholder="Full Delivery Address">
-            <button class="btn-red" style="height:50px; font-size:16px; margin-top:10px;" onclick="submitOrder()">Confirm Order</button>
-            <p style="margin-top:15px; font-size:12px; color:gray;" onclick="document.getElementById('orderModal').style.display='none'">Cancel</p>
+            <button class="btn-red" id="submitBtn" style="height:50px; font-size:16px; margin-top:10px;" onclick="submitOrder()">Confirm Order</button>
+            <p style="margin-top:15px; font-size:12px; color:gray; cursor:pointer;" onclick="document.getElementById('orderModal').style.display='none'">Cancel</p>
         </div>
     </div>
 
@@ -115,14 +94,14 @@
         <div class="modal-box">
             <i class="fas fa-check-circle" style="color:var(--green); font-size:60px; margin-bottom:15px;"></i>
             <h2>Order Success!</h2>
-            <p style="margin: 15px 0; color:#555;">Thank you for your order! We will contact you soon to confirm delivery.</p>
+            <p style="margin: 15px 0; color:#555;">Thank you for your order! We will contact you soon.</p>
             <button class="btn-red" onclick="location.reload()">Great, Thank You!</button>
         </div>
     </div>
 
     <footer>
-        <div style="margin-bottom:10px;">raiyanusa20@gmail.com | 01313607293</div>
-        <div style="color:#666;">2026 - Copyright RAIYAN | SHM Gadget Zone</div>
+        <div>raiyanusa20@gmail.com | 01313607293</div>
+        <div style="color:#666; margin-top:5px;">2026 - Copyright RAIYAN | SHM Gadget Zone</div>
     </footer>
 
     <script>
@@ -139,11 +118,7 @@
 
         db.collection("products").onSnapshot(s => {
             all = [];
-            s.forEach(d => { 
-                let p = d.data(); 
-                p.id = d.id; 
-                all.push(p); 
-            });
+            s.forEach(d => { let p = d.data(); p.id = d.id; all.push(p); });
             show(all);
         });
 
@@ -169,52 +144,70 @@
         function openDetail(id) {
             const p = all.find(x => x.id === id);
             const isOut = p.inStock === false;
-            
             document.getElementById('dvImg').src = p.image;
-            document.getElementById('dvImg').className = isOut ? 'dv-img gray' : 'dv-img';
             document.getElementById('dvTitle').innerText = p.title;
             document.getElementById('dvPrice').innerText = "৳ " + p.price;
             document.getElementById('dvBrand').innerText = p.brand || "Premium";
             document.getElementById('dvStockStatus').innerText = isOut ? "Out of Stock" : "Available";
-            document.getElementById('dvStockStatus').style.color = isOut ? "red" : "green";
             document.getElementById('dvDesc').innerText = p.description || "Premium quality gadget.";
-            
-            const orderBtn = document.getElementById('dvOrderBtn');
-            orderBtn.disabled = isOut;
-            orderBtn.innerText = isOut ? "OUT OF STOCK" : "ORDER ON WEBSITE";
-            orderBtn.onclick = () => openOrder(p.id);
-            
-            document.getElementById('dvWABtn').onclick = function() {
-                const phone = "8801313607293";
-                const msg = `Hello SHM Gadget Zone,\nI want to order this:\n\nProduct: ${p.title}\nPrice: ৳${p.price}\n\nPlease confirm availability.`;
-                window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
-            };
-            
+            document.getElementById('dvOrderBtn').onclick = () => openOrder(p.id);
             document.getElementById('detailView').style.display = 'block';
-            window.scrollTo(0,0);
         }
 
         function closeDetail() { document.getElementById('detailView').style.display = 'none'; }
-
         function openOrder(id) {
             tempOrder = all.find(x => x.id === id);
             document.getElementById('orderModal').style.display = 'block';
         }
 
-        function submitOrder() {
+        // UPDATED SUBMIT FUNCTION WITH FORMSPREE EMAIL ALERT
+        async function submitOrder() {
             const n = document.getElementById('custName').value;
             const ph = document.getElementById('custPhone').value;
             const ad = document.getElementById('custAddr').value;
+            const btn = document.getElementById('submitBtn');
+
             if(!n || !ph || !ad) return alert("Please fill all details!");
 
-            db.collection("orders").add({
-                item: tempOrder.title, price: tempOrder.price,
-                customer: n, phone: ph, address: ad, 
-                date: new Date().toLocaleString(), status: "Pending"
-            }).then(() => {
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            const orderData = {
+                item: tempOrder.title,
+                price: tempOrder.price,
+                customer: n,
+                phone: ph,
+                address: ad,
+                date: new Date().toLocaleString(),
+                status: "Pending"
+            };
+
+            try {
+                // 1. Save to Firebase Database
+                await db.collection("orders").add(orderData);
+
+                // 2. Send System Email via Formspree
+                await fetch("https://formspree.io/f/mgovgpbg", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        _subject: "New Order: " + tempOrder.title,
+                        Customer_Name: n,
+                        Mobile: ph,
+                        Address: ad,
+                        Product: tempOrder.title,
+                        Price: tempOrder.price
+                    })
+                });
+
+                // 3. Success
                 document.getElementById('orderModal').style.display = 'none';
                 document.getElementById('successModal').style.display = 'block';
-            });
+            } catch (err) {
+                alert("Order saved, but email notification failed. Please check your admin panel.");
+                document.getElementById('orderModal').style.display = 'none';
+                document.getElementById('successModal').style.display = 'block';
+            }
         }
 
         function search() {
