@@ -46,6 +46,23 @@
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
         
+        /* FOMO NOTIFICATION STYLE */
+        #fomo-toast {
+            position: fixed; bottom: 85px; left: 15px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none; align-items: center; gap: 10px;
+            z-index: 2000; animation: slideUp 0.6s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+            max-width: 260px;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        .fomo-img { width: 35px; height: 35px; border-radius: 6px; object-fit: cover; background: #f0f0f0; }
+        .fomo-txt { font-size: 10px; color: #444; line-height: 1.3; }
+        .fomo-txt b { color: #000; font-size: 11px; }
+
         #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:2000; overflow-y:auto; }
         .dv-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: #fff; }
         .dv-body { padding: 20px; }
@@ -75,6 +92,14 @@
     <div id="loader">
         <div class="spinner"></div>
         <img src="https://i.ibb.co.com/fd0vscq9/FB-IMG-1767802259536.jpg" class="loader-logo">
+    </div>
+
+    <div id="fomo-toast">
+        <img id="fomo-img" src="" class="fomo-img">
+        <div class="fomo-txt">
+            <b id="fomo-name"></b>
+            <span id="fomo-product"></span>
+        </div>
     </div>
 
     <header>
@@ -180,7 +205,10 @@
 
         let all = [], tempOrder = null, currentDelCharge = 80;
 
-        window.onload = () => { setTimeout(() => document.getElementById('loader').classList.add('fade-out'), 800); };
+        window.onload = () => { 
+            setTimeout(() => document.getElementById('loader').classList.add('fade-out'), 800); 
+            startFomo(); // Start the 30sec notification
+        };
 
         db.collection("products").onSnapshot(s => {
             all = [];
@@ -188,10 +216,147 @@
             show(all);
         });
 
+        // SALES NOTIFICATION LOGIC
+        function startFomo() {
+            const names = ["raiyan", "riya", "shifa", "tonoy", "habib", "zara", "rumana", "Sabbir", "Anika", "Tanvir", "Mitu", "Rakib", "Sumaiya"];
+            const locs = ["Dhaka", "Chittagong", "Uttara", "Mirpur", "Sylhet", "Gazipur", "Rajshahi"];
+
+            setInterval(() => {
+                if(all.length === 0) return;
+                
+                const randomName = names[Math.floor(Math.random() * names.length)];
+                const randomLoc = locs[Math.floor(Math.random() * locs.length)];
+                const randomProd = all[Math.floor(Math.random() * all.length)];
+
+                document.getElementById('fomo-img').src = randomProd.image;
+                document.getElementById('fomo-name').innerText = randomName.charAt(0).toUpperCase() + randomName.slice(1) + " from " + randomLoc;
+                document.getElementById('fomo-product').innerText = "\nJust bought " + randomProd.title.substring(0, 25) + "...";
+                
+                const toast = document.getElementById('fomo-toast');
+                toast.style.display = 'flex';
+                
+                setTimeout(() => { toast.style.display = 'none'; }, 6000); // Hide after 6 seconds
+            }, 30000); // Every 30 seconds
+        }
+
         function show(data) {
             const g = document.getElementById('prodGrid');
             g.innerHTML = data.map(p => {
                 const isOut = p.inStock === false;
+                return `<div class="card">
+                    ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
+                    <div class="img-box" onclick="openDetail('${p.id}')"><img src="${p.image}" class="${isOut ? 'gray' : ''}"></div>
+                    <div class="price">৳ ${p.price}</div>
+                    <div class="title">${p.title}</div>
+                    <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">${isOut ? 'STOCK OUT' : 'BUY NOW'}</button>
+                </div>`;
+            }).join('');
+        }
+
+        function openDetail(id) {
+            const p = all.find(x => x.id === id);
+            const isOut = p.inStock === false;
+            const slider = document.getElementById('dvSlider');
+            slider.innerHTML = `<img src="${p.image}">`;
+            if(p.image2) slider.innerHTML += `<img src="${p.image2}">`;
+            if(p.image3) slider.innerHTML += `<img src="${p.image3}">`;
+            document.getElementById('dvTitle').innerText = p.title;
+            document.getElementById('dvPrice').innerText = "৳ " + p.price;
+            document.getElementById('dvBrand').innerText = p.brand || "Premium";
+            document.getElementById('dvStockStatus').innerText = isOut ? "Out of Stock" : "Available";
+            document.getElementById('dvDesc').innerText = p.description || "No details.";
+            const orderBtn = document.getElementById('dvOrderBtn');
+            orderBtn.disabled = isOut;
+            orderBtn.onclick = () => { closeDetail(); openOrder(p.id); };
+            document.getElementById('detailView').style.display = 'block';
+        }
+
+        function closeDetail() { document.getElementById('detailView').style.display = 'none'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function openOrder(id) {
+            tempOrder = all.find(x => x.id === id);
+            document.getElementById('orderModal').style.display = 'block';
+            calcTotal(80);
+        }
+
+        function calcTotal(charge) {
+            currentDelCharge = charge;
+            const total = parseInt(tempOrder.price) + charge;
+            document.getElementById('finalPrice').innerText = "৳ " + total;
+        }
+
+        function openTrack() { 
+            document.getElementById('trackModal').style.display = 'block'; 
+            document.getElementById('trackResult').style.display = 'none';
+        }
+
+        async function trackOrder() {
+            const ph = document.getElementById('trackPhone').value.trim();
+            if(!ph) return alert("Enter your phone number");
+            const btn = document.getElementById('trackSearchBtn');
+            btn.innerText = "Searching...";
+            try {
+                const snap = await db.collection("orders").where("Mobile", "==", ph).get();
+                if(snap.empty) {
+                    alert("No order found!");
+                    btn.innerText = "CHECK STATUS";
+                    return;
+                }
+                const orders = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+                const o = orders[0];
+                const status = o.status || "Pending";
+                document.getElementById('trackResult').style.display = 'block';
+                document.getElementById('tProd').innerText = o.Product;
+                const steps = ["Pending", "Processing", "Shipped", "Delivered"];
+                const currentIdx = steps.indexOf(status);
+                for(let i=1; i<=4; i++) {
+                    const s = document.getElementById('s'+i);
+                    const l = document.getElementById('l'+i);
+                    if(i-1 <= currentIdx) {
+                        s.classList.add('active');
+                        l.classList.add('active');
+                        s.innerHTML = '<i class="fas fa-check"></i>';
+                    } else {
+                        s.classList.remove('active');
+                        l.classList.remove('active');
+                        s.innerHTML = i;
+                    }
+                }
+            } catch(e) { alert("Error connecting..."); }
+            btn.innerText = "CHECK STATUS";
+        }
+
+        async function submitOrder() {
+            const n = document.getElementById('custName').value, ph = document.getElementById('custPhone').value, ad = document.getElementById('custAddr').value;
+            if(!n || !ph || !ad) return alert("Fill all fields!");
+
+            document.getElementById('submitBtn').disabled = true;
+            const totalAmount = parseInt(tempOrder.price) + currentDelCharge;
+            
+            const orderData = {
+                Product: tempOrder.title,
+                Total: totalAmount,
+                Customer: n,
+                Mobile: ph,
+                Address: ad,
+                Date: new Date().toLocaleString(),
+                status: "Pending" 
+            };
+
+            const docRef = await db.collection("orders").add(orderData);
+            document.getElementById('newOrderID').innerText = docRef.id.substring(0,8).toUpperCase();
+            document.getElementById('orderModal').style.display = 'none';
+            document.getElementById('successModal').style.display = 'block';
+        }
+
+        function search() {
+            const q = document.getElementById('find').value.toLowerCase();
+            show(all.filter(x => x.title.toLowerCase().includes(q)));
+        }
+    </script>
+</body>
+</html>
                 return `<div class="card">
                     ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
                     <div class="img-box" onclick="openDetail('${p.id}')"><img src="${p.image}" class="${isOut ? 'gray' : ''}"></div>
