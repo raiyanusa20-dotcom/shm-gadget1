@@ -70,13 +70,11 @@
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
 
-        /* PAGINATION STYLES */
         .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 20px 10px; background: var(--bg); }
         .page-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .page-info { font-size: 13px; font-weight: 600; color: var(--text); }
         
-        /* NOTIFICATION TOAST STYLES */
         #custom-toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
             background: var(--dark); color: white; padding: 12px 25px; border-radius: 12px;
@@ -133,9 +131,18 @@
         footer { background: #1a1a1a; color: #fff; padding: 40px 15px; margin-top: 20px; font-size: 12px; text-align: center; }
         .footer-about { max-width: 600px; margin: 0 auto 20px; line-height: 1.6; color: #bbb; }
         .footer-about h4 { color: #fff; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; }
+
+        /* FEATURE 20: MAINTENANCE OVERLAY */
+        #maintenanceOverlay { display:none; position:fixed; inset:0; background:white; z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
     </style>
 </head>
 <body>
+
+    <div id="maintenanceOverlay">
+        <i class="fas fa-tools" style="font-size:60px; color:var(--red); margin-bottom:20px;"></i>
+        <h1 style="font-size:24px;">Under Maintenance</h1>
+        <p style="color:#666; margin-top:10px;">We are currently upgrading our shop. <br>Please check back later!</p>
+    </div>
 
     <div id="loader">
         <div class="spinner"></div>
@@ -277,26 +284,28 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // --- FEATURE 20: MAINTENANCE CHECK ---
+        db.collection("settings").doc("maintenance").onSnapshot(doc => {
+            if(doc.exists && doc.data().enabled === true) {
+                document.getElementById('maintenanceOverlay').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.getElementById('maintenanceOverlay').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
         let all = [], tempOrder = null, currentDelCharge = 80, currentCat = 'All', discount = 0;
         let currentPage = 1;
         const productsPerPage = 14;
 
-        // PROFESSIONAL NOTIFICATION FUNCTION
         function notify(msg, type = 'info') {
             const toast = document.getElementById('custom-toast');
             const icon = document.getElementById('toast-icon');
             document.getElementById('toast-msg').innerText = msg;
-            
-            if(type === 'error') {
-                icon.className = 'fas fa-exclamation-circle';
-                toast.style.background = '#ff0000';
-            } else if(type === 'success') {
-                icon.className = 'fas fa-check-circle';
-                toast.style.background = '#25D366';
-            } else {
-                icon.className = 'fas fa-info-circle';
-                toast.style.background = '#1a1a1a';
-            }
+            if(type === 'error') { icon.className = 'fas fa-exclamation-circle'; toast.style.background = '#ff0000'; } 
+            else if(type === 'success') { icon.className = 'fas fa-check-circle'; toast.style.background = '#25D366'; } 
+            else { icon.className = 'fas fa-info-circle'; toast.style.background = '#1a1a1a'; }
             toast.classList.add('show');
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
@@ -321,9 +330,7 @@
         db.collection("categories").onSnapshot(s => {
             const bar = document.getElementById('catBar');
             bar.innerHTML = '<button class="cat-btn active" onclick="filterCat(\'All\', this)">All Gadgets</button>';
-            s.forEach(doc => { 
-                bar.innerHTML += `<button class="cat-btn" onclick="filterCat('${doc.data().name}', this)">${doc.data().name}</button>`; 
-            });
+            s.forEach(doc => { bar.innerHTML += `<button class="cat-btn" onclick="filterCat('${doc.data().name}', this)">${doc.data().name}</button>`; });
         });
 
         db.collection("products").onSnapshot(s => {
@@ -334,16 +341,15 @@
         });
 
         function filterCat(name, btn) {
-            currentCat = name;
-            currentPage = 1;
+            currentCat = name; currentPage = 1;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             show();
         }
 
         function startFomo() {
-            const names = ["raiyan", "riya", "shifa", "tonoy", "habib", "zara", "rumana", "Sabbir", "Anika", "Tanvir", "Mitu", "Rakib", "Sumaiya"];
-            const locs = ["Dhaka", "Chittagong", "Uttara", "Mirpur", "Sylhet", "Gazipur", "Rajshahi"];
+            const names = ["raiyan", "riya", "shifa", "tonoy", "habib", "zara", "rumana", "Sabbir", "Anika"];
+            const locs = ["Dhaka", "Chittagong", "Uttara", "Mirpur", "Sylhet"];
             setInterval(() => {
                 if(all.length === 0) return;
                 const rn = names[Math.floor(Math.random() * names.length)];
@@ -360,8 +366,7 @@
         function show() {
             const g = document.getElementById('prodGrid');
             const filtered = currentCat === 'All' ? all : all.filter(x => x.category === currentCat);
-            const totalProducts = filtered.length;
-            const totalPages = Math.ceil(totalProducts / productsPerPage);
+            const totalPages = Math.ceil(filtered.length / productsPerPage);
             const start = (currentPage - 1) * productsPerPage;
             const paginatedItems = filtered.slice(start, start + productsPerPage);
 
@@ -382,15 +387,10 @@
             document.getElementById('paginationBar').style.display = totalPages <= 1 ? 'none' : 'flex';
         }
 
-        function changePage(direction) {
-            currentPage += direction;
-            show();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        function changePage(direction) { currentPage += direction; show(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
         function openDetail(id) {
-            const p = all.find(x => x.id === id);
-            const isOut = p.inStock === false;
+            const p = all.find(x => x.id === id); const isOut = p.inStock === false;
             const s = document.getElementById('dvSlider');
             s.innerHTML = `<img src="${p.image}">`;
             if(p.image2) s.innerHTML += `<img src="${p.image2}">`;
@@ -409,8 +409,7 @@
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         function openOrder(id) {
-            tempOrder = all.find(x => x.id === id);
-            discount = 0; document.getElementById('promoInput').value = "";
+            tempOrder = all.find(x => x.id === id); discount = 0; document.getElementById('promoInput').value = "";
             document.getElementById('orderModal').style.display = 'block';
             calcTotal(80);
         }
@@ -431,47 +430,58 @@
             document.getElementById('finalPrice').innerText = "৳ " + (total < 0 ? 0 : total);
         }
 
-        function openTrack() { 
-            document.getElementById('trackModal').style.display = 'block'; 
-            document.getElementById('trackResult').style.display = 'none';
-        }
+        function openTrack() { document.getElementById('trackModal').style.display = 'block'; document.getElementById('trackResult').style.display = 'none'; }
 
         async function trackOrder() {
             const ph = document.getElementById('trackPhone').value.trim();
             if(!ph) return notify("Enter your phone number", "error");
-            try {
-                const snap = await db.collection("orders").where("Mobile", "==", ph).get();
-                if(snap.empty) return notify("No order found!", "error");
-                notify("Order tracked!", "success");
-                const o = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.Date) - new Date(a.Date))[0];
-                document.getElementById('trackResult').style.display = 'block';
-                document.getElementById('tProd').innerText = o.Product;
-                const steps = ["Pending", "Processing", "Shipped", "Delivered"];
-                const cur = steps.indexOf(o.status || "Pending");
-                for(let i=1; i<=4; i++) {
-                    const s = document.getElementById('s'+i), l = document.getElementById('l'+i);
-                    if(i-1 <= cur) { s.classList.add('active'); l.classList.add('active'); s.innerHTML = '✓'; }
-                    else { s.classList.remove('active'); l.classList.remove('active'); s.innerHTML = i; }
-                }
-            } catch(e) { notify("Error tracking!", "error"); }
+            const snap = await db.collection("orders").where("Mobile", "==", ph).get();
+            if(snap.empty) return notify("No order found!", "error");
+            const o = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.Date) - new Date(a.Date))[0];
+            document.getElementById('trackResult').style.display = 'block';
+            document.getElementById('tProd').innerText = o.Product;
+            const steps = ["Pending", "Processing", "Shipped", "Delivered"];
+            const cur = steps.indexOf(o.status || "Pending");
+            for(let i=1; i<=4; i++) {
+                const s = document.getElementById('s'+i), l = document.getElementById('l'+i);
+                if(i-1 <= cur) { s.classList.add('active'); l.classList.add('active'); s.innerHTML = '✓'; }
+                else { s.classList.remove('active'); l.classList.remove('active'); s.innerHTML = i; }
+            }
         }
 
+        // --- FEATURE 18: BLACKLISTED SUBMISSION ---
         async function submitOrder() {
             const n = document.getElementById('custName').value, ph = document.getElementById('custPhone').value, ad = document.getElementById('custAddr').value;
             if(!n || ph.length !== 11 || !ad) return notify("Fill all fields correctly!", "error");
+            
             document.getElementById('submitBtn').disabled = true;
-            const total = (parseInt(tempOrder.price) + currentDelCharge) - discount;
-            const orderData = { Product: tempOrder.title, Total: total, Customer: n, Mobile: ph, Address: ad, Date: new Date().toLocaleString(), status: "Pending" };
-            const doc = await db.collection("orders").add(orderData);
-            document.getElementById('newOrderID').innerText = doc.id.substring(0,8).toUpperCase();
-            document.getElementById('orderModal').style.display = 'none';
-            document.getElementById('successModal').style.display = 'block';
+            document.getElementById('submitBtn').innerText = "Verifying...";
+
+            try {
+                // Check blacklist
+                const blackSnap = await db.collection("blacklist").where("phone", "==", ph).get();
+                if(!blackSnap.empty) {
+                    notify("Sorry, this phone number is blocked.", "error");
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('submitBtn').innerText = "Confirm Order";
+                    return;
+                }
+
+                const total = (parseInt(tempOrder.price) + currentDelCharge) - discount;
+                const orderData = { Product: tempOrder.title, Total: total, Customer: n, Mobile: ph, Address: ad, Date: new Date().toLocaleString(), status: "Pending" };
+                const doc = await db.collection("orders").add(orderData);
+                document.getElementById('newOrderID').innerText = doc.id.substring(0,8).toUpperCase();
+                document.getElementById('orderModal').style.display = 'none';
+                document.getElementById('successModal').style.display = 'block';
+            } catch(e) {
+                notify("Order Error!", "error");
+                document.getElementById('submitBtn').disabled = false;
+            }
         }
 
         function search() {
             const q = document.getElementById('find').value.toLowerCase();
             const filtered = all.filter(x => x.title.toLowerCase().includes(q));
-            currentPage = 1;
             const g = document.getElementById('prodGrid');
             g.innerHTML = filtered.slice(0, 14).map(p => {
                 const isOut = p.inStock === false;
