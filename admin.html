@@ -38,14 +38,16 @@
         .stock-item img { width: 100%; height: 100px; object-fit: contain; border-radius: 10px; }
         .status-toggle { width: 100%; padding: 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: 700; margin-top: 8px; cursor: pointer; }
 
-        input, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; }
+        input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; }
         input:focus { border-color: var(--primary); }
         .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(255,0,0,0.2); }
 
-        /* MULTI-UPLOAD AREA */
         .upload-area { min-height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; margin-bottom: 15px; padding: 10px; }
         .preview-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .preview-img { width: 80px; height: 80px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; }
+
+        /* STATUS COLORS */
+        .status-select { background: #f8fafc; font-size: 12px; padding: 8px; border: 1px solid #cbd5e1; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -105,7 +107,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
-        // Storage for up to 3 compressed images
         let imagesArray = [];
 
         if(sessionStorage.getItem("admin_auth") !== "true") document.getElementById('loginOverlay').style.display='flex';
@@ -123,7 +124,6 @@
             e.currentTarget.classList.add('active');
         }
 
-        // NEW: HANDLE MULTIPLE IMAGES
         async function handleMultipleImages(input) {
             const files = Array.from(input.files).slice(0, 3);
             imagesArray = [];
@@ -133,7 +133,6 @@
             for (let file of files) {
                 const b64 = await compress(file);
                 imagesArray.push(b64);
-                
                 const img = document.createElement('img');
                 img.src = b64;
                 img.className = 'preview-img';
@@ -163,18 +162,10 @@
 
         async function publish() {
             const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
-            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields and add at least 1 image!");
-            
+            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields!");
             document.getElementById('saveBtn').innerText = "Uploading...";
-            document.getElementById('saveBtn').disabled = true;
-
             await db.collection("products").add({
-                title: n, 
-                price: p, 
-                image: imagesArray[0],           // Primary Image
-                image2: imagesArray[1] || "",    // Optional Image 2
-                image3: imagesArray[2] || "",    // Optional Image 3
-                inStock: true,
+                title: n, price: p, image: imagesArray[0], image2: imagesArray[1] || "", image3: imagesArray[2] || "", inStock: true,
                 brand: document.getElementById('pBrand').value,
                 description: document.getElementById('pDesc').value,
                 date: Date.now()
@@ -182,16 +173,80 @@
             location.reload();
         }
 
-        // LIVE ORDERS
+        // UPDATED LIVE ORDERS WITH MANUAL TRACKING STATUS
         db.collection("orders").orderBy("date","desc").onSnapshot(snap => {
             const list = document.getElementById('orderList');
             list.innerHTML = "";
             snap.forEach(doc => {
                 const o = doc.data();
+                const currentStatus = o.status || "Pending";
                 list.innerHTML += `
-                <div class="card">
+                <div class="card" style="border-left: 5px solid ${getStatusColor(currentStatus)}">
                     <div class="order-meta"><span>#${doc.id.substring(0,6)}</span> <span>${o.date}</span></div>
                     <b style="font-size:15px;">${o.item}</b> <span style="color:var(--primary); font-weight:800;">৳${o.price}</span>
+                    <div style="font-size:12px; margin-top:8px; color:#475569;">
+                        <i class="fas fa-user"></i> ${o.customer} <br>
+                        <i class="fas fa-map-marker-alt"></i> ${o.address}
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <p style="font-size:10px; font-weight:bold; color:#64748b;">ORDER STATUS:</p>
+                        <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
+                            <option value="Pending" ${currentStatus=='Pending'?'selected':''}>⏳ Pending</option>
+                            <option value="Processing" ${currentStatus=='Processing'?'selected':''}>⚙️ Processing</option>
+                            <option value="Shipped" ${currentStatus=='Shipped'?'selected':''}>🚚 Shipped</option>
+                            <option value="Delivered" ${currentStatus=='Delivered'?'selected':''}>✅ Delivered</option>
+                            <option value="Cancelled" ${currentStatus=='Cancelled'?'selected':''}>❌ Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-group">
+                        <a href="tel:${o.phone}" class="action-btn" style="background:#ecfdf5; color:#059669;"><i class="fas fa-phone"></i> CALL</a>
+                        <button onclick="delOrder('${doc.id}')" class="action-btn" style="background:#fff1f1; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        // Functions for Status
+        async function updateStatus(id, s) {
+            await db.collection("orders").doc(id).update({ status: s });
+            alert("Status updated to " + s);
+        }
+
+        function getStatusColor(s) {
+            if(s === 'Shipped') return '#3b82f6';
+            if(s === 'Delivered') return '#10b981';
+            if(s === 'Cancelled') return '#ef4444';
+            return '#f59e0b'; // Pending/Processing
+        }
+
+        // LIVE STOCK MANAGER
+        db.collection("products").onSnapshot(snap => {
+            const list = document.getElementById('stockList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data();
+                const isOut = p.inStock === false;
+                list.innerHTML += `
+                <div class="stock-item" style="opacity:${isOut?0.5:1}">
+                    <img src="${p.image}">
+                    <div style="font-size:11px; font-weight:700; margin:5px 0; height:30px; overflow:hidden;">${p.title}</div>
+                    <button class="status-toggle" onclick="toggleStock('${doc.id}', ${!p.inStock})" 
+                        style="background:${isOut?'#64748b':'#10b981'}; color:white;">
+                        ${isOut ? '🔴 STOCK OUT' : '🟢 IN STOCK'}
+                    </button>
+                    <i class="fas fa-times-circle" onclick="delProd('${doc.id}')" style="position:absolute; top:-5px; right:-5px; color:red; font-size:18px; background:white; border-radius:50%;"></i>
+                </div>`;
+            });
+        });
+
+        async function toggleStock(id, status) { await db.collection("products").doc(id).update({inStock: status}); }
+        async function delOrder(id) { if(confirm("Delete Order?")) await db.collection("orders").doc(id).delete(); }
+        async function delProd(id) { if(confirm("Delete Product?")) await db.collection("products").doc(id).delete(); }
+    </script>
+</body>
+</html>
                     <div style="font-size:12px; margin-top:8px; color:#475569;">
                         <i class="fas fa-user"></i> ${o.customer} <br>
                         <i class="fas fa-map-marker-alt"></i> ${o.address}
