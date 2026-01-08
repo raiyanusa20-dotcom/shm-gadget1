@@ -49,9 +49,10 @@
 
         .status-select { background: #f8fafc; font-size: 12px; padding: 8px; border: 1px solid #cbd5e1; margin-top: 5px; cursor: pointer; }
 
-        /* CATEGORY SECTION STYLES */
-        .cat-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
-        .cat-tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #475569; }
+        /* CATEGORY & PROMO STYLES */
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #475569; }
+        .edit-input { padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 80px; text-align: center; }
     </style>
 </head>
 <body>
@@ -72,7 +73,8 @@
     <nav class="nav">
         <button class="tab active" onclick="go(event, 'orders')">ORDERS</button>
         <button class="tab" onclick="go(event, 'stock')">STOCK</button>
-        <button class="tab" onclick="go(event, 'folders')">CATEGORIES</button>
+        <button class="tab" onclick="go(event, 'folders')">FOLDERS</button>
+        <button class="tab" onclick="go(event, 'promo')">PROMO</button>
         <button class="tab" onclick="go(event, 'add')">ADD ITEM</button>
     </nav>
 
@@ -87,11 +89,21 @@
 
         <div id="folders" class="page">
             <div class="card">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Create New Folder/Category</h3>
-                <input type="text" id="newCatName" placeholder="e.g. Smartwatch, Accessories">
+                <h3 style="font-size: 14px; margin-bottom: 10px;">New Category</h3>
+                <input type="text" id="newCatName" placeholder="e.g. Smartwatch">
                 <button class="submit-btn" style="padding: 12px;" onclick="addCategory()">+ CREATE FOLDER</button>
             </div>
             <div id="categoryList"></div>
+        </div>
+
+        <div id="promo" class="page">
+            <div class="card">
+                <h3 style="font-size: 14px; margin-bottom: 10px;">Create Promo Code</h3>
+                <input type="text" id="promoCode" placeholder="Code (e.g. SAVE100)">
+                <input type="number" id="promoVal" placeholder="Discount Amount (৳)">
+                <button class="submit-btn" style="padding: 12px;" onclick="addPromo()">+ ADD PROMO</button>
+            </div>
+            <div id="promoList"></div>
         </div>
 
         <div id="add" class="page">
@@ -104,10 +116,8 @@
                 <input type="file" id="file" hidden accept="image/*" multiple onchange="handleMultipleImages(this)">
             </div>
             
-            <p style="font-size: 11px; font-weight: 700; margin-bottom: 5px; color: #64748b;">SELECT FOLDER / TYPE:</p>
-            <select id="pCategory">
-                <option value="General">General</option>
-            </select>
+            <p style="font-size: 11px; font-weight: 700; margin-bottom: 5px; color: #64748b;">FOLDER:</p>
+            <select id="pCategory"><option value="General">General</option></select>
 
             <input type="text" id="pName" placeholder="Gadget Name">
             <input type="number" id="pPrice" placeholder="Price (৳)">
@@ -144,134 +154,76 @@
             e.currentTarget.classList.add('active');
         }
 
-        // CATEGORY LOGIC
+        // --- DYNAMIC FOLDERS (12) ---
         db.collection("categories").onSnapshot(snap => {
             const list = document.getElementById('categoryList');
             const dropdown = document.getElementById('pCategory');
             list.innerHTML = "";
             dropdown.innerHTML = '<option value="General">General</option>';
-            
             snap.forEach(doc => {
                 const cat = doc.data().name;
-                list.innerHTML += `
-                    <div class="cat-item">
-                        <span class="cat-tag"><i class="fas fa-folder"></i> ${cat}</span>
-                        <i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="delCategory('${doc.id}')"></i>
-                    </div>`;
+                list.innerHTML += `<div class="list-item"><span class="tag">${cat}</span><i class="fas fa-trash" style="color:red" onclick="delDoc('categories','${doc.id}')"></i></div>`;
                 dropdown.innerHTML += `<option value="${cat}">${cat}</option>`;
             });
         });
-
         async function addCategory() {
-            const name = document.getElementById('newCatName').value;
-            if(!name) return;
-            await db.collection("categories").add({ name: name });
+            const n = document.getElementById('newCatName').value;
+            if(n) await db.collection("categories").add({ name: n });
             document.getElementById('newCatName').value = "";
         }
 
-        async function delCategory(id) {
-            if(confirm("Delete this folder?")) await db.collection("categories").doc(id).delete();
-        }
-
-        async function handleMultipleImages(input) {
-            const files = Array.from(input.files).slice(0, 3);
-            imagesArray = [];
-            document.getElementById('previewContainer').innerHTML = "";
-            document.getElementById('prompt').style.display = 'none';
-
-            for (let file of files) {
-                const b64 = await compress(file);
-                imagesArray.push(b64);
-                const img = document.createElement('img');
-                img.src = b64;
-                img.className = 'preview-img';
-                document.getElementById('previewContainer').appendChild(img);
-            }
-        }
-
-        function compress(file) {
-            return new Promise(resolve => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = e => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext("2d");
-                        const scale = 600 / img.width;
-                        canvas.width = 600; 
-                        canvas.height = img.height * scale;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL("image/jpeg", 0.6));
-                    }
-                }
+        // --- PROMO CODES (19) ---
+        db.collection("promos").onSnapshot(snap => {
+            const list = document.getElementById('promoList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `<div class="list-item"><span><b>${d.code}</b> (-৳${d.val})</span><i class="fas fa-trash" style="color:red" onclick="delDoc('promos','${doc.id}')"></i></div>`;
             });
+        });
+        async function addPromo() {
+            const c = document.getElementById('promoCode').value, v = document.getElementById('promoVal').value;
+            if(c && v) await db.collection("promos").add({ code: c, val: v });
+            document.getElementById('promoCode').value = ""; document.getElementById('promoVal').value = "";
         }
 
-        async function publish() {
-            const n = document.getElementById('pName').value, 
-                  p = document.getElementById('pPrice').value,
-                  cat = document.getElementById('pCategory').value;
-            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields!");
-            document.getElementById('saveBtn').innerText = "Uploading...";
-            await db.collection("products").add({
-                title: n, 
-                price: p, 
-                category: cat, // SAVING THE CATEGORY
-                image: imagesArray[0], 
-                image2: imagesArray[1] || "", 
-                image3: imagesArray[2] || "", 
-                inStock: true,
-                brand: document.getElementById('pBrand').value,
-                description: document.getElementById('pDesc').value,
-                date: Date.now()
-            });
-            location.reload();
+        // --- EDITING PRICES (9) ---
+        async function updatePrice(id, newPrice) {
+            await db.collection("products").doc(id).update({ price: newPrice });
         }
 
-        db.collection("orders").orderBy("date","desc").onSnapshot(snap => {
+        // --- ORDER STATUS (8) ---
+        async function updateStatus(id, s) {
+            await db.collection("orders").doc(id).update({ status: s });
+        }
+
+        db.collection("orders").orderBy("Date","desc").onSnapshot(snap => {
             const list = document.getElementById('orderList');
             list.innerHTML = "";
             snap.forEach(doc => {
                 const o = doc.data();
-                const currentStatus = o.status || "Pending";
+                const s = o.status || "Pending";
                 list.innerHTML += `
-                <div class="card" style="border-left: 5px solid ${getStatusColor(currentStatus)}">
-                    <div class="order-meta"><span>#${doc.id.substring(0,6)}</span> <span>${o.date}</span></div>
-                    <b style="font-size:15px;">${o.Product}</b> <span style="color:var(--primary); font-weight:800;">৳${o.Total}</span>
-                    <div style="font-size:12px; margin-top:8px; color:#475569;">
-                        <i class="fas fa-user"></i> ${o.Customer} <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.Address}
-                    </div>
-                    <div style="margin-top:10px;">
-                        <p style="font-size:10px; font-weight:bold; color:#64748b;">ORDER STATUS:</p>
-                        <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
-                            <option value="Pending" ${currentStatus=='Pending'?'selected':''}>⏳ Pending</option>
-                            <option value="Processing" ${currentStatus=='Processing'?'selected':''}>⚙️ Processing</option>
-                            <option value="Shipped" ${currentStatus=='Shipped'?'selected':''}>🚚 Shipped</option>
-                            <option value="Delivered" ${currentStatus=='Delivered'?'selected':''}>✅ Delivered</option>
-                            <option value="Cancelled" ${currentStatus=='Cancelled'?'selected':''}>❌ Cancelled</option>
-                        </select>
-                    </div>
+                <div class="card" style="border-left: 5px solid ${getStatusColor(s)}">
+                    <div class="order-meta"><span>#${doc.id.substring(0,5)}</span> <span>${o.Date}</span></div>
+                    <b>${o.Product}</b> <span style="color:red">৳${o.Total}</span>
+                    <div style="font-size:12px; margin:5px 0;"><i class="fas fa-user"></i> ${o.Customer} | ${o.Mobile}</div>
+                    <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
+                        <option value="Pending" ${s=='Pending'?'selected':''}>⏳ Pending</option>
+                        <option value="Processing" ${s=='Processing'?'selected':''}>⚙️ Processing</option>
+                        <option value="Shipped" ${s=='Shipped'?'selected':''}>🚚 Shipped</option>
+                        <option value="Delivered" ${s=='Delivered'?'selected':''}>✅ Delivered</option>
+                    </select>
                     <div class="btn-group">
-                        <a href="tel:${o.Mobile}" class="action-btn" style="background:#ecfdf5; color:#059669;"><i class="fas fa-phone"></i> CALL</a>
-                        <button onclick="delOrder('${doc.id}')" class="action-btn" style="background:#fff1f1; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
+                        <a href="tel:${o.Mobile}" class="action-btn" style="background:#e6fffa; color:#2c7a7b;">CALL</a>
+                        <button onclick="delDoc('orders','${doc.id}')" class="action-btn" style="background:#fff5f5; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             });
         });
 
-        async function updateStatus(id, s) {
-            await db.collection("orders").doc(id).update({ status: s });
-            alert("Status updated!");
-        }
-
         function getStatusColor(s) {
-            if(s === 'Shipped') return '#3b82f6';
-            if(s === 'Delivered') return '#10b981';
-            if(s === 'Cancelled') return '#ef4444';
-            return '#f59e0b';
+            return s==='Shipped'?'#3182ce':s==='Delivered'?'#38a169':'#ecc94b';
         }
 
         db.collection("products").onSnapshot(snap => {
@@ -279,24 +231,63 @@
             list.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
-                const isOut = p.inStock === false;
                 list.innerHTML += `
-                <div class="stock-item" style="opacity:${isOut?0.5:1}">
+                <div class="stock-item" style="opacity:${p.inStock?1:0.6}">
                     <img src="${p.image}">
-                    <div style="font-size:10px; color:gray; margin-top:5px;">FOLDER: ${p.category || 'General'}</div>
-                    <div style="font-size:11px; font-weight:700; margin:5px 0; height:30px; overflow:hidden;">${p.title}</div>
-                    <button class="status-toggle" onclick="toggleStock('${doc.id}', ${!p.inStock})" 
-                        style="background:${isOut?'#64748b':'#10b981'}; color:white;">
-                        ${isOut ? '🔴 STOCK OUT' : '🟢 IN STOCK'}
+                    <input type="number" class="edit-input" value="${p.price}" onchange="updatePrice('${doc.id}', this.value)">
+                    <div style="font-size:10px; font-weight:700; margin:5px 0;">${p.title}</div>
+                    <button class="status-toggle" onclick="db.collection('products').doc('${doc.id}').update({inStock: ${!p.inStock}})" 
+                        style="background:${p.inStock?'#10b981':'#64748b'}; color:white;">
+                        ${p.inStock ? '🟢 IN STOCK' : '🔴 OUT'}
                     </button>
-                    <i class="fas fa-times-circle" onclick="delProd('${doc.id}')" style="position:absolute; top:-5px; right:-5px; color:red; font-size:18px; background:white; border-radius:50%;"></i>
+                    <i class="fas fa-times-circle" onclick="delDoc('products','${doc.id}')" style="position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; background:white; border-radius:50%;"></i>
                 </div>`;
             });
         });
 
-        async function toggleStock(id, status) { await db.collection("products").doc(id).update({inStock: status}); }
-        async function delOrder(id) { if(confirm("Delete Order?")) await db.collection("orders").doc(id).delete(); }
-        async function delProd(id) { if(confirm("Delete Product?")) await db.collection("products").doc(id).delete(); }
+        // --- IMAGE & PUBLISH ---
+        async function handleMultipleImages(input) {
+            const files = Array.from(input.files).slice(0, 3);
+            imagesArray = [];
+            document.getElementById('previewContainer').innerHTML = "";
+            document.getElementById('prompt').style.display = 'none';
+            for (let file of files) {
+                const b64 = await compress(file);
+                imagesArray.push(b64);
+                const img = document.createElement('img'); img.src = b64; img.className = 'preview-img';
+                document.getElementById('previewContainer').appendChild(img);
+            }
+        }
+
+        function compress(file) {
+            return new Promise(res => {
+                const r = new FileReader(); r.readAsDataURL(file);
+                r.onload = e => {
+                    const img = new Image(); img.src = e.target.result;
+                    img.onload = () => {
+                        const c = document.createElement('canvas'); const ctx = c.getContext("2d");
+                        c.width = 600; c.height = img.height * (600 / img.width);
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
+                        res(c.toDataURL("image/jpeg", 0.6));
+                    }
+                }
+            });
+        }
+
+        async function publish() {
+            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value, cat = document.getElementById('pCategory').value;
+            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields!");
+            document.getElementById('saveBtn').innerText = "Uploading...";
+            await db.collection("products").add({
+                title: n, price: p, category: cat, image: imagesArray[0], 
+                image2: imagesArray[1] || "", image3: imagesArray[2] || "", 
+                inStock: true, brand: document.getElementById('pBrand').value, 
+                description: document.getElementById('pDesc').value, date: Date.now()
+            });
+            location.reload();
+        }
+
+        async function delDoc(col, id) { if(confirm("Delete this?")) await db.collection(col).doc(id).delete(); }
     </script>
 </body>
 </html>
