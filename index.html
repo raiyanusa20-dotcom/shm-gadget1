@@ -76,6 +76,16 @@
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .page-info { font-size: 13px; font-weight: 600; color: var(--text); }
         
+        /* NOTIFICATION TOAST STYLES */
+        #custom-toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--dark); color: white; padding: 12px 25px; border-radius: 12px;
+            font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; transition: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        #custom-toast.show { transform: translateX(-50%) translateY(0); }
+        #custom-toast i { font-size: 18px; }
+
         #fomo-toast {
             position: fixed; bottom: 85px; left: 15px;
             background: var(--card);
@@ -130,6 +140,11 @@
     <div id="loader">
         <div class="spinner"></div>
         <img src="https://i.ibb.co.com/fd0vscq9/FB-IMG-1767802259536.jpg" class="loader-logo">
+    </div>
+
+    <div id="custom-toast">
+        <i id="toast-icon" class="fas fa-info-circle"></i>
+        <span id="toast-msg"></span>
     </div>
 
     <div id="fomo-toast">
@@ -263,10 +278,28 @@
         const db = firebase.firestore();
 
         let all = [], tempOrder = null, currentDelCharge = 80, currentCat = 'All', discount = 0;
-        
-        // PAGINATION SETTINGS
         let currentPage = 1;
         const productsPerPage = 14;
+
+        // PROFESSIONAL NOTIFICATION FUNCTION
+        function notify(msg, type = 'info') {
+            const toast = document.getElementById('custom-toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-msg').innerText = msg;
+            
+            if(type === 'error') {
+                icon.className = 'fas fa-exclamation-circle';
+                toast.style.background = '#ff0000';
+            } else if(type === 'success') {
+                icon.className = 'fas fa-check-circle';
+                toast.style.background = '#25D366';
+            } else {
+                icon.className = 'fas fa-info-circle';
+                toast.style.background = '#1a1a1a';
+            }
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
 
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -327,14 +360,10 @@
         function show() {
             const g = document.getElementById('prodGrid');
             const filtered = currentCat === 'All' ? all : all.filter(x => x.category === currentCat);
-            
-            // PAGINATION CALCULATION
             const totalProducts = filtered.length;
             const totalPages = Math.ceil(totalProducts / productsPerPage);
-            
             const start = (currentPage - 1) * productsPerPage;
-            const end = start + productsPerPage;
-            const paginatedItems = filtered.slice(start, end);
+            const paginatedItems = filtered.slice(start, start + productsPerPage);
 
             g.innerHTML = paginatedItems.map(p => {
                 const isOut = p.inStock === false;
@@ -347,12 +376,9 @@
                 </div>`;
             }).join('');
 
-            // UPDATE UI
             document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-            
-            // Hide bar if only 1 page
             document.getElementById('paginationBar').style.display = totalPages <= 1 ? 'none' : 'flex';
         }
 
@@ -391,11 +417,11 @@
 
         async function applyPromo() {
             const code = document.getElementById('promoInput').value.trim();
-            if(!code) return;
+            if(!code) return notify("Please enter a code", "info");
             const snap = await db.collection("promos").where("code", "==", code).get();
-            if(snap.empty) { alert("Invalid Code!"); return; }
+            if(snap.empty) { notify("Invalid Promo Code!", "error"); return; }
             discount = parseInt(snap.docs[0].data().val);
-            alert("Promo Applied! ৳" + discount + " Discount.");
+            notify("৳" + discount + " Discount Applied!", "success");
             calcTotal(currentDelCharge);
         }
 
@@ -412,10 +438,11 @@
 
         async function trackOrder() {
             const ph = document.getElementById('trackPhone').value.trim();
-            if(!ph) return alert("Enter your phone number");
+            if(!ph) return notify("Enter your phone number", "error");
             try {
                 const snap = await db.collection("orders").where("Mobile", "==", ph).get();
-                if(snap.empty) return alert("No order found!");
+                if(snap.empty) return notify("No order found!", "error");
+                notify("Order tracked!", "success");
                 const o = snap.docs.map(d => d.data()).sort((a,b) => new Date(b.Date) - new Date(a.Date))[0];
                 document.getElementById('trackResult').style.display = 'block';
                 document.getElementById('tProd').innerText = o.Product;
@@ -426,12 +453,12 @@
                     if(i-1 <= cur) { s.classList.add('active'); l.classList.add('active'); s.innerHTML = '✓'; }
                     else { s.classList.remove('active'); l.classList.remove('active'); s.innerHTML = i; }
                 }
-            } catch(e) { alert("Error!"); }
+            } catch(e) { notify("Error tracking!", "error"); }
         }
 
         async function submitOrder() {
             const n = document.getElementById('custName').value, ph = document.getElementById('custPhone').value, ad = document.getElementById('custAddr').value;
-            if(!n || ph.length !== 11 || !ad) return alert("Fill all fields correctly!");
+            if(!n || ph.length !== 11 || !ad) return notify("Fill all fields correctly!", "error");
             document.getElementById('submitBtn').disabled = true;
             const total = (parseInt(tempOrder.price) + currentDelCharge) - discount;
             const orderData = { Product: tempOrder.title, Total: total, Customer: n, Mobile: ph, Address: ad, Date: new Date().toLocaleString(), status: "Pending" };
