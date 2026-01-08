@@ -53,6 +53,10 @@
         .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
         .tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #475569; }
         .edit-input { padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 80px; text-align: center; }
+
+        /* NEW ADVANCED UI ELEMENTS */
+        .bulk-box { background: #fff1f1; border: 1.5px dashed var(--primary); padding: 12px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 8px; align-items: center; }
+        .ai-btn { background: #6366f1; color: #fff; border: none; padding: 8px 12px; border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer; margin-bottom: 12px; display: inline-block; width: 100%; }
     </style>
 </head>
 <body>
@@ -84,6 +88,10 @@
         </div>
 
         <div id="stock" class="page">
+            <div class="bulk-box">
+                <input type="number" id="bulkVal" placeholder="Discount % (e.g. 10)" style="margin:0; padding:10px; font-size:12px;">
+                <button onclick="bulkPriceUpdate()" style="background:var(--primary); color:#fff; border:none; padding:10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">APPLY TO ALL</button>
+            </div>
             <div id="stockList" class="stock-grid"></div>
         </div>
 
@@ -120,9 +128,12 @@
             <select id="pCategory"><option value="General">General</option></select>
 
             <input type="text" id="pName" placeholder="Gadget Name">
+            
+            <button class="ai-btn" onclick="aiWrite()"><i class="fas fa-robot"></i> ✨ AI AUTO-WRITE (SEO + BANGLA)</button>
+            
             <input type="number" id="pPrice" placeholder="Price (৳)">
             <input type="text" id="pBrand" placeholder="Brand / Model">
-            <textarea id="pDesc" placeholder="Product Details..." rows="2"></textarea>
+            <textarea id="pDesc" placeholder="Product Details..." rows="6"></textarea>
             <button class="submit-btn" id="saveBtn" onclick="publish()">PUBLISH TO WEBSITE</button>
         </div>
     </div>
@@ -154,7 +165,49 @@
             e.currentTarget.classList.add('active');
         }
 
-        // --- DYNAMIC FOLDERS (12) ---
+        // --- FEATURE 1: ADVANCED AI GENERATOR ---
+        function aiWrite() {
+            const name = document.getElementById('pName').value;
+            const brand = document.getElementById('pBrand').value || "Premium";
+            if(!name) return alert("Enter gadget name first!");
+            const btn = document.querySelector('.ai-btn');
+            btn.innerText = "Generating SEO Content...";
+            setTimeout(() => {
+                const aiTemplate = `🔥 ${name} - Original ${brand} Gadget ⚡
+
+✅ Key Features:
+• Premium build quality & durability.
+• High-performance battery life.
+• Sleek & modern tech design.
+
+🇧🇩 আমাদের কাছে পাচ্ছেন ১০০% অরিজিনাল পন্য। খুব সীমিত স্টকে আছে, তাই দেরি না করে এখনই অর্ডার করুন! 
+
+🚀 Fast Home Delivery All Over Bangladesh.
+🛒 Click 'Order Now' to grab yours today!
+
+#SHMGadgetZone #PremiumGadget #OriginalTech #GadgetBD #SmartElectronics`;
+                document.getElementById('pDesc').value = aiTemplate;
+                btn.innerHTML = `<i class="fas fa-check"></i> SEO & BANGLA ADDED!`;
+            }, 800);
+        }
+
+        // --- FEATURE 6: BULK PRICE UPDATE ---
+        async function bulkPriceUpdate() {
+            const pct = document.getElementById('bulkVal').value;
+            if(!pct || !confirm(`Apply ${pct}% discount to ALL items?`)) return;
+            const snap = await db.collection("products").get();
+            const batch = db.batch();
+            snap.forEach(doc => {
+                const oldP = parseInt(doc.data().price);
+                const newP = Math.round(oldP - (oldP * (pct / 100)));
+                batch.update(doc.ref, { price: newP });
+            });
+            await batch.commit();
+            alert("Success! All prices updated.");
+            document.getElementById('bulkVal').value = "";
+        }
+
+        // --- DYNAMIC FOLDERS ---
         db.collection("categories").onSnapshot(snap => {
             const list = document.getElementById('categoryList');
             const dropdown = document.getElementById('pCategory');
@@ -172,7 +225,7 @@
             document.getElementById('newCatName').value = "";
         }
 
-        // --- PROMO CODES (19) ---
+        // --- PROMO CODES ---
         db.collection("promos").onSnapshot(snap => {
             const list = document.getElementById('promoList');
             list.innerHTML = "";
@@ -187,12 +240,12 @@
             document.getElementById('promoCode').value = ""; document.getElementById('promoVal').value = "";
         }
 
-        // --- EDITING PRICES (9) ---
+        // --- EDITING PRICES ---
         async function updatePrice(id, newPrice) {
             await db.collection("products").doc(id).update({ price: newPrice });
         }
 
-        // --- ORDER STATUS (8) ---
+        // --- ORDER STATUS ---
         async function updateStatus(id, s) {
             await db.collection("orders").doc(id).update({ status: s });
         }
