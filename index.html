@@ -24,7 +24,6 @@
             --border: #eeeeee;
         }
 
-        /* DARK MODE DEFINITION */
         [data-theme="dark"] {
             --bg: #0f172a;
             --card: #1e293b;
@@ -49,8 +48,6 @@
         
         .header-tools { display: flex; gap: 8px; align-items: center; }
         .track-btn { background: var(--dark); color: var(--card); border: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
-
-        /* THEME TOGGLE BUTTON */
         .theme-btn { background: var(--bg); border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
 
         .search-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; display: flex; padding: 8px 12px; }
@@ -72,6 +69,12 @@
         
         .btn-red { background: var(--red); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; }
         .btn-wa { background: var(--green); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
+
+        /* PAGINATION STYLES */
+        .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 20px 10px; background: var(--bg); }
+        .page-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { font-size: 13px; font-weight: 600; color: var(--text); }
         
         #fomo-toast {
             position: fixed; bottom: 85px; left: 15px;
@@ -156,6 +159,12 @@
     </div>
 
     <div class="container" id="prodGrid"></div>
+
+    <div class="pagination-bar" id="paginationBar">
+        <button class="page-btn" id="prevBtn" onclick="changePage(-1)">Previous</button>
+        <span class="page-info" id="pageInfo">Page 1</span>
+        <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next</button>
+    </div>
 
     <div id="trackModal" class="modal">
         <div class="modal-box">
@@ -254,8 +263,11 @@
         const db = firebase.firestore();
 
         let all = [], tempOrder = null, currentDelCharge = 80, currentCat = 'All', discount = 0;
+        
+        // PAGINATION SETTINGS
+        let currentPage = 1;
+        const productsPerPage = 14;
 
-        // DARK MODE SCRIPT
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -264,7 +276,6 @@
             document.getElementById('themeBtn').innerHTML = targetTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
         }
         
-        // APPLY THEME ON LOAD
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
 
@@ -285,14 +296,16 @@
         db.collection("products").onSnapshot(s => {
             all = [];
             s.forEach(d => { let p = d.data(); p.id = d.id; all.push(p); });
-            show(all);
+            currentPage = 1;
+            show();
         });
 
         function filterCat(name, btn) {
             currentCat = name;
+            currentPage = 1;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            show(all);
+            show();
         }
 
         function startFomo() {
@@ -311,10 +324,19 @@
             }, 30000);
         }
 
-        function show(data) {
+        function show() {
             const g = document.getElementById('prodGrid');
-            const filtered = currentCat === 'All' ? data : data.filter(x => x.category === currentCat);
-            g.innerHTML = filtered.map(p => {
+            const filtered = currentCat === 'All' ? all : all.filter(x => x.category === currentCat);
+            
+            // PAGINATION CALCULATION
+            const totalProducts = filtered.length;
+            const totalPages = Math.ceil(totalProducts / productsPerPage);
+            
+            const start = (currentPage - 1) * productsPerPage;
+            const end = start + productsPerPage;
+            const paginatedItems = filtered.slice(start, end);
+
+            g.innerHTML = paginatedItems.map(p => {
                 const isOut = p.inStock === false;
                 return `<div class="card">
                     ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
@@ -324,6 +346,20 @@
                     <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">${isOut ? 'STOCK OUT' : 'BUY NOW'}</button>
                 </div>`;
             }).join('');
+
+            // UPDATE UI
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+            
+            // Hide bar if only 1 page
+            document.getElementById('paginationBar').style.display = totalPages <= 1 ? 'none' : 'flex';
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            show();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function openDetail(id) {
@@ -407,7 +443,20 @@
 
         function search() {
             const q = document.getElementById('find').value.toLowerCase();
-            show(all.filter(x => x.title.toLowerCase().includes(q)));
+            const filtered = all.filter(x => x.title.toLowerCase().includes(q));
+            currentPage = 1;
+            const g = document.getElementById('prodGrid');
+            g.innerHTML = filtered.slice(0, 14).map(p => {
+                const isOut = p.inStock === false;
+                return `<div class="card">
+                    ${isOut ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
+                    <div class="img-box" onclick="openDetail('${p.id}')"><img src="${p.image}" class="${isOut ? 'gray' : ''}"></div>
+                    <div class="price">৳ ${p.price}</div>
+                    <div class="title">${p.title}</div>
+                    <button class="btn-red" ${isOut ? 'disabled' : ''} onclick="openOrder('${p.id}')">${isOut ? 'STOCK OUT' : 'BUY NOW'}</button>
+                </div>`;
+            }).join('');
+            document.getElementById('paginationBar').style.display = 'none';
         }
     </script>
 </body>
