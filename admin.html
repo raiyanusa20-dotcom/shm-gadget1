@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHM CONTROL CENTER</title>
+    <title>SHM COMMAND CENTER v2.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -11,16 +11,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --primary: #ff0000; --dark: #0f172a; --bg: #f3f4f6; --success: #10b981; }
+        :root { --primary: #ff0000; --dark: #0f172a; --bg: #f3f4f6; --success: #10b981; --accent: #6366f1; }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 40px; }
 
-        header { background: var(--dark); color: white; padding: 25px; text-align: center; border-radius: 0 0 25px 25px; }
-        
+        header { background: var(--dark); color: white; padding: 25px 20px 50px; text-align: center; border-radius: 0 0 30px 30px; }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: -30px 15px 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0; }
+        .stat-card small { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .stat-card h3 { color: var(--dark); font-size: 18px; margin-top: 5px; }
+
         #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .login-card { background: white; padding: 35px; border-radius: 20px; width: 90%; max-width: 380px; text-align: center; }
 
-        .nav { display: flex; background: white; margin: -20px 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
+        .nav { display: flex; background: white; margin: 0 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
         .nav::-webkit-scrollbar { display: none; }
         .tab { flex: 1; min-width: 80px; padding: 15px; border: none; background: none; font-weight: 700; font-size: 11px; color: #64748b; cursor: pointer; white-space: nowrap; }
         .tab.active { color: var(--primary); background: #fff1f1; border-bottom: 3px solid var(--primary); }
@@ -29,127 +33,116 @@
         .page { display: none; }
         .page.active { display: block; }
 
-        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; position: relative; }
+        .card { background: white; padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; position: relative; }
         .order-meta { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 12px; }
-        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
-
+        
         .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stock-item { background: white; padding: 10px; border-radius: 15px; text-align: center; border: 1px solid #e2e8f0; position: relative; }
-        .stock-item img { width: 100%; height: 100px; object-fit: contain; border-radius: 10px; }
-        .status-toggle { width: 100%; padding: 6px; border: none; border-radius: 6px; font-size: 10px; font-weight: 700; margin-top: 8px; cursor: pointer; }
+        .stock-item { background: white; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .stock-item img { width: 100%; height: 110px; object-fit: contain; border-radius: 10px; background: #f9f9f9; margin-bottom: 8px; }
+        .stock-item b { font-size: 12px; height: 32px; overflow: hidden; display: block; }
+        .stock-price { color: var(--primary); font-weight: 800; font-size: 14px; margin: 5px 0; }
+        
+        .stock-actions { display: flex; gap: 5px; margin-top: auto; }
+        .btn-edit { flex: 1; background: #f1f5f9; border: none; padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer; }
+        .btn-del { background: #fff1f1; color: var(--primary); border: none; padding: 8px; border-radius: 8px; cursor: pointer; }
+
+        #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; }
+        .edit-box { background:white; width:92%; max-width:450px; border-radius:20px; padding:20px; max-height: 85vh; overflow-y: auto; }
 
         input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; font-size: 14px; }
-        input:focus { border-color: var(--primary); }
-        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(255,0,0,0.2); cursor: pointer; }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        .upload-area { min-height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; margin-bottom: 15px; padding: 10px; }
-        .preview-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .preview-img { width: 80px; height: 80px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; }
-
-        .status-select { background: #f8fafc; font-size: 12px; padding: 8px; border: 1px solid #cbd5e1; margin-top: 5px; cursor: pointer; }
-
-        /* CATEGORY & PROMO STYLES */
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
-        .tag { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #475569; }
-        .edit-input { padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 80px; text-align: center; }
-
-        /* NEW ADVANCED UI ELEMENTS */
-        .bulk-box { background: #fff1f1; border: 1.5px dashed var(--primary); padding: 12px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 8px; align-items: center; }
-        .ai-btn { background: #6366f1; color: #fff; border: none; padding: 8px 12px; border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer; margin-bottom: 12px; display: inline-block; width: 100%; }
-        
-        /* Maintenance Toggle Style */
-        .m-toggle { display: flex; justify-content: space-between; align-items: center; background: #000; color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .special-promo-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
 
     <div id="loginOverlay">
         <div class="login-card">
-            <h2>Admin Login</h2>
-            <input type="password" id="adminPass" placeholder="Enter Secret Key" style="margin-top:20px;">
-            <button class="submit-btn" onclick="verifyAdmin()">Login</button>
+            <h2>SHM ADMIN</h2>
+            <input type="password" id="adminPass" placeholder="Secret Key" style="margin-top:20px;">
+            <button class="submit-btn" onclick="verifyAdmin()">Unlock</button>
+        </div>
+    </div>
+
+    <div id="editModal">
+        <div class="edit-box">
+            <h3>Edit Product</h3>
+            <input type="hidden" id="editId">
+            <p style="font-size:10px; font-weight:700; color:#64748b; margin-top:10px;">PRODUCT NAME</p>
+            <input type="text" id="editTitle">
+            <p style="font-size:10px; font-weight:700; color:#64748b;">PRICE (৳)</p>
+            <input type="number" id="editPrice">
+            <p style="font-size:10px; font-weight:700; color:#64748b;">DESCRIPTION</p>
+            <textarea id="editDesc" rows="5"></textarea>
+            <button class="submit-btn" onclick="saveProductEdit()">UPDATE NOW</button>
+            <p onclick="document.getElementById('editModal').style.display='none'" style="text-align:center; margin-top:15px; color:red; cursor:pointer; font-size:12px;">Close</p>
         </div>
     </div>
 
     <header>
         <h2>SHM COMMAND</h2>
-        <p style="font-size:11px; opacity:0.7;">Business Management Dashboard</p>
+        <p style="font-size:11px; opacity:0.7;">v2.2 • All-In-One Dashboard</p>
     </header>
+
+    <div class="stats-row">
+        <div class="stat-card"><small>Revenue</small><h3 id="statRev">৳ 0</h3></div>
+        <div class="stat-card"><small>Active Orders</small><h3 id="statOrders">0</h3></div>
+    </div>
 
     <nav class="nav">
         <button class="tab active" onclick="go(event, 'orders')">ORDERS</button>
         <button class="tab" onclick="go(event, 'stock')">STOCK</button>
-        <button class="tab" onclick="go(event, 'folders')">FOLDERS</button>
-        <button class="tab" onclick="go(event, 'promo')">PROMO</button>
         <button class="tab" onclick="go(event, 'add')">ADD ITEM</button>
+        <button class="tab" onclick="go(event, 'config')">CONFIG</button>
     </nav>
 
     <div class="container">
         <div id="orders" class="page active">
-            <div id="orderList">Loading orders...</div>
+            <div id="orderList">Loading...</div>
         </div>
 
         <div id="stock" class="page">
-            <div class="bulk-box">
-                <input type="number" id="bulkVal" placeholder="Discount % (e.g. 10)" style="margin:0; padding:10px; font-size:12px;">
-                <button onclick="bulkPriceUpdate()" style="background:var(--primary); color:#fff; border:none; padding:10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">APPLY TO ALL</button>
-            </div>
             <div id="stockList" class="stock-grid"></div>
         </div>
 
-        <div id="folders" class="page">
-            <div class="m-toggle">
-                <span><i class="fas fa-tools"></i> Maintenance Mode</span>
-                <button id="mBtn" onclick="toggleMaintenance()" style="padding: 5px 15px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer;">LOADING...</button>
-            </div>
-
+        <div id="add" class="page">
             <div class="card">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">New Category</h3>
-                <input type="text" id="newCatName" placeholder="e.g. Smartwatch">
-                <button class="submit-btn" style="padding: 12px;" onclick="addCategory()">+ CREATE FOLDER</button>
+                <div id="previewContainer" style="display:flex; gap:5px; margin-bottom:10px;"></div>
+                <button onclick="document.getElementById('file').click()" style="width:100%; padding:10px; border:2px dashed #ccc; border-radius:12px; background:none; margin-bottom:10px; cursor:pointer;">+ Add Images</button>
+                <input type="file" id="file" hidden multiple onchange="handleImages(this)">
+                
+                <input type="text" id="pName" placeholder="Product Name">
+                <input type="number" id="pPrice" placeholder="Price (৳)">
+                
+                <div class="special-promo-box">
+                    <p style="font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 5px;">ITEM-SPECIFIC PROMO</p>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="pSecretCode" placeholder="Code" style="margin:0; font-size:12px;">
+                        <input type="number" id="pSecretVal" placeholder="৳ Off" style="margin:0; font-size:12px; width:100px;">
+                    </div>
+                </div>
+                
+                <textarea id="pDesc" placeholder="Product Description..." rows="4"></textarea>
+                <button class="submit-btn" id="saveBtn" onclick="publish()">PUBLISH PRODUCT</button>
             </div>
-            <div id="categoryList"></div>
         </div>
 
-        <div id="promo" class="page">
+        <div id="config" class="page">
+            <div class="card" style="background:#000; color:#fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Maintenance Mode</span>
+                    <button id="mBtn" onclick="toggleMaintenance()" style="padding:8px 15px; border-radius:8px; border:none; font-weight:bold;"></button>
+                </div>
+            </div>
             <div class="card">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Create Promo Code</h3>
-                <input type="text" id="promoCode" placeholder="Code (e.g. SAVE100)">
-                <input type="number" id="promoVal" placeholder="Discount Amount (৳)">
-                <button class="submit-btn" style="padding: 12px;" onclick="addPromo()">+ ADD PROMO</button>
+                <h3>Global Promos</h3>
+                <input type="text" id="promoCode" placeholder="CODE">
+                <input type="number" id="promoVal" placeholder="৳ Value">
+                <button class="submit-btn" onclick="addPromo()">Add Global Promo</button>
             </div>
             <div id="promoList"></div>
-
-            <div class="card" style="margin-top: 20px; border-color: #000;">
-                <h3 style="font-size: 14px; margin-bottom: 10px;"><i class="fas fa-user-slash"></i> Blacklist (Fake Customers)</h3>
-                <input type="number" id="blockPhone" placeholder="01XXXXXXXXX">
-                <button class="submit-btn" style="padding: 12px; background: #000;" onclick="addToBlacklist()">BLOCK NUMBER</button>
-            </div>
-            <div id="blacklistItems"></div>
-        </div>
-
-        <div id="add" class="page">
-            <div class="upload-area" onclick="document.getElementById('file').click()">
-                <div id="previewContainer" class="preview-container"></div>
-                <div id="prompt" style="text-align:center; color:#94a3b8;">
-                    <i class="fas fa-cloud-upload-alt" style="font-size:30px; margin-bottom:8px;"></i>
-                    <p style="font-size:12px; font-weight:600;">Tap to Upload (Max 3)</p>
-                </div>
-                <input type="file" id="file" hidden accept="image/*" multiple onchange="handleMultipleImages(this)">
-            </div>
-            
-            <p style="font-size: 11px; font-weight: 700; margin-bottom: 5px; color: #64748b;">FOLDER:</p>
-            <select id="pCategory"><option value="General">General</option></select>
-
-            <input type="text" id="pName" placeholder="Gadget Name">
-            
-            <button class="ai-btn" onclick="aiWrite()"><i class="fas fa-robot"></i> ✨ AI AUTO-WRITE (SEO + BANGLA)</button>
-            
-            <input type="number" id="pPrice" placeholder="Price (৳)">
-            <input type="text" id="pBrand" placeholder="Brand / Model">
-            <textarea id="pDesc" placeholder="Product Details..." rows="6"></textarea>
-            <button class="submit-btn" id="saveBtn" onclick="publish()">PUBLISH TO WEBSITE</button>
         </div>
     </div>
 
@@ -162,16 +155,15 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
         let imagesArray = [];
 
-        if(sessionStorage.getItem("admin_auth") !== "true") document.getElementById('loginOverlay').style.display='flex';
         function verifyAdmin() {
             if(document.getElementById('adminPass').value === "shm2026") {
                 sessionStorage.setItem("admin_auth", "true");
                 document.getElementById('loginOverlay').style.display='none';
             } else { alert("Wrong Key!"); }
         }
+        if(sessionStorage.getItem("admin_auth") === "true") document.getElementById('loginOverlay').style.display='none';
 
         function go(e, id) {
             document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -180,181 +172,104 @@
             e.currentTarget.classList.add('active');
         }
 
-        // --- FEATURE 1: ADVANCED AI GENERATOR ---
-        function aiWrite() {
-            const name = document.getElementById('pName').value;
-            const brand = document.getElementById('pBrand').value || "Premium";
-            if(!name) return alert("Enter gadget name first!");
-            const btn = document.querySelector('.ai-btn');
-            btn.innerText = "Generating SEO Content...";
-            setTimeout(() => {
-                const aiTemplate = `🔥 ${name} - Original ${brand} Gadget ⚡
-
-✅ Key Features:
-• Premium build quality & durability.
-• High-performance battery life.
-• Sleek & modern tech design.
-
-🇧🇩 আমাদের কাছে পাচ্ছেন ১০০% অরিজিনাল পন্য। খুব সীমিত স্টকে আছে, তাই দেরি না করে এখনই অর্ডার করুন! 
-
-🚀 Fast Home Delivery All Over Bangladesh.
-🛒 Click 'Order Now' to grab yours today!
-
-#SHMGadgetZone #PremiumGadget #OriginalTech #GadgetBD #SmartElectronics`;
-                document.getElementById('pDesc').value = aiTemplate;
-                btn.innerHTML = `<i class="fas fa-check"></i> SEO & BANGLA ADDED!`;
-            }, 800);
-        }
-
-        // --- FEATURE 6: BULK PRICE UPDATE ---
-        async function bulkPriceUpdate() {
-            const pct = document.getElementById('bulkVal').value;
-            if(!pct || !confirm(`Apply ${pct}% discount to ALL items?`)) return;
-            const snap = await db.collection("products").get();
-            const batch = db.batch();
-            snap.forEach(doc => {
-                const oldP = parseInt(doc.data().price);
-                const newP = Math.round(oldP - (oldP * (pct / 100)));
-                batch.update(doc.ref, { price: newP });
-            });
-            await batch.commit();
-            alert("Success! All prices updated.");
-            document.getElementById('bulkVal').value = "";
-        }
-
-        // --- FEATURE 20: MAINTENANCE MODE LOGIC ---
-        db.collection("settings").doc("maintenance").onSnapshot(doc => {
-            const status = doc.exists ? doc.data().enabled : false;
-            const btn = document.getElementById('mBtn');
-            btn.innerText = status ? "ON (WEBSITE HIDDEN)" : "OFF (WEBSITE LIVE)";
-            btn.style.background = status ? "#ff0000" : "#10b981";
-            btn.dataset.status = status;
-        });
-
-        async function toggleMaintenance() {
-            const cur = document.getElementById('mBtn').dataset.status === "true";
-            await db.collection("settings").doc("maintenance").set({ enabled: !cur });
-        }
-
-        // --- FEATURE 18: BLACKLIST LOGIC ---
-        db.collection("blacklist").onSnapshot(snap => {
-            const list = document.getElementById('blacklistItems');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                list.innerHTML += `<div class="list-item"><span><i class="fas fa-ban"></i> ${doc.data().phone}</span><i class="fas fa-trash" style="color:red" onclick="delDoc('blacklist','${doc.id}')"></i></div>`;
-            });
-        });
-
-        async function addToBlacklist() {
-            const ph = document.getElementById('blockPhone').value;
-            if(ph.length === 11) {
-                await db.collection("blacklist").add({ phone: ph });
-                document.getElementById('blockPhone').value = "";
-            } else { alert("Enter 11 digit number"); }
-        }
-
-        // --- DYNAMIC FOLDERS ---
-        db.collection("categories").onSnapshot(snap => {
-            const list = document.getElementById('categoryList');
-            const dropdown = document.getElementById('pCategory');
-            list.innerHTML = "";
-            dropdown.innerHTML = '<option value="General">General</option>';
-            snap.forEach(doc => {
-                const cat = doc.data().name;
-                list.innerHTML += `<div class="list-item"><span class="tag">${cat}</span><i class="fas fa-trash" style="color:red" onclick="delDoc('categories','${doc.id}')"></i></div>`;
-                dropdown.innerHTML += `<option value="${cat}">${cat}</option>`;
-            });
-        });
-        async function addCategory() {
-            const n = document.getElementById('newCatName').value;
-            if(n) await db.collection("categories").add({ name: n });
-            document.getElementById('newCatName').value = "";
-        }
-
-        // --- PROMO CODES ---
-        db.collection("promos").onSnapshot(snap => {
-            const list = document.getElementById('promoList');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                list.innerHTML += `<div class="list-item"><span><b>${d.code}</b> (-৳${d.val})</span><i class="fas fa-trash" style="color:red" onclick="delDoc('promos','${doc.id}')"></i></div>`;
-            });
-        });
-        async function addPromo() {
-            const c = document.getElementById('promoCode').value, v = document.getElementById('promoVal').value;
-            if(c && v) await db.collection("promos").add({ code: c, val: v });
-            document.getElementById('promoCode').value = ""; document.getElementById('promoVal').value = "";
-        }
-
-        // --- EDITING PRICES ---
-        async function updatePrice(id, newPrice) {
-            await db.collection("products").doc(id).update({ price: newPrice });
-        }
-
-        // --- ORDER STATUS ---
-        async function updateStatus(id, s) {
-            await db.collection("orders").doc(id).update({ status: s });
-        }
-
+        // --- ORDER LOGIC ---
         db.collection("orders").orderBy("Date","desc").onSnapshot(snap => {
             const list = document.getElementById('orderList');
+            let rev = 0, active = 0;
             list.innerHTML = "";
             snap.forEach(doc => {
                 const o = doc.data();
                 const s = o.status || "Pending";
+                if(s === "Delivered") rev += parseInt(o.Total || 0);
+                if(s !== "Delivered" && s !== "Cancelled") active++;
+
                 list.innerHTML += `
-                <div class="card" style="border-left: 5px solid ${getStatusColor(s)}">
-                    <div class="order-meta"><span>#${doc.id.substring(0,5)}</span> <span>${o.Date}</span></div>
-                    <b>${o.Product}</b> <span style="color:red">৳${o.Total}</span>
-                    <div style="font-size:12px; margin:5px 0;"><i class="fas fa-user"></i> ${o.Customer} | ${o.Mobile}</div>
-                    <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
-                        <option value="Pending" ${s=='Pending'?'selected':''}>⏳ Pending</option>
-                        <option value="Processing" ${s=='Processing'?'selected':''}>⚙️ Processing</option>
-                        <option value="Shipped" ${s=='Shipped'?'selected':''}>🚚 Shipped</option>
-                        <option value="Delivered" ${s=='Delivered'?'selected':''}>✅ Delivered</option>
-                    </select>
-                    <div class="btn-group">
-                        <a href="tel:${o.Mobile}" class="action-btn" style="background:#e6fffa; color:#2c7a7b;">CALL</a>
-                        <button onclick="delDoc('orders','${doc.id}')" class="action-btn" style="background:#fff5f5; color:red; flex:none; width:45px;"><i class="fas fa-trash"></i></button>
+                <div class="card" style="border-left: 5px solid ${getColor(s)}; opacity: ${s=='Cancelled'?'0.5':'1'}">
+                    <div class="order-meta"><span>${doc.id.substring(0,6)}</span> <span>${o.Date}</span></div>
+                    <b>${o.Product}</b> <span style="color:red; font-weight:bold;">৳${o.Total}</span>
+                    <p style="font-size:12px; margin:5px 0;">${o.Customer} | ${o.Mobile}</p>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <select onchange="updateStatus('${doc.id}', this.value)" style="margin:0; padding:8px; font-size:12px; flex:1;">
+                            <option value="Pending" ${s=='Pending'?'selected':''}>Pending</option>
+                            <option value="Processing" ${s=='Processing'?'selected':''}>Processing</option>
+                            <option value="Shipped" ${s=='Shipped'?'selected':''}>Shipped</option>
+                            <option value="Delivered" ${s=='Delivered'?'selected':''}>Delivered</option>
+                            <option value="Cancelled" ${s=='Cancelled'?'selected':''}>Cancelled</option>
+                        </select>
+                        <button onclick="delDoc('orders','${doc.id}')" style="background:#fff1f1; color:red; border:1px solid #fee2e2; border-radius:12px; width:45px;"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             });
+            document.getElementById('statRev').innerText = "৳ " + rev.toLocaleString();
+            document.getElementById('statOrders').innerText = active;
         });
 
-        function getStatusColor(s) {
-            return s==='Shipped'?'#3182ce':s==='Delivered'?'#38a169':'#ecc94b';
+        function getColor(s) {
+            if(s==='Delivered') return '#10b981';
+            if(s==='Cancelled') return '#64748b';
+            if(s==='Shipped') return '#3b82f6';
+            if(s==='Processing') return '#8b5cf6';
+            return '#f59e0b';
         }
 
+        // --- STOCK LOGIC ---
         db.collection("products").onSnapshot(snap => {
             const list = document.getElementById('stockList');
             list.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
                 list.innerHTML += `
-                <div class="stock-item" style="opacity:${p.inStock?1:0.6}">
+                <div class="stock-item">
                     <img src="${p.image}">
-                    <input type="number" class="edit-input" value="${p.price}" onchange="updatePrice('${doc.id}', this.value)">
-                    <div style="font-size:10px; font-weight:700; margin:5px 0;">${p.title}</div>
-                    <button class="status-toggle" onclick="db.collection('products').doc('${doc.id}').update({inStock: ${!p.inStock}})" 
-                        style="background:${p.inStock?'#10b981':'#64748b'}; color:white;">
-                        ${p.inStock ? '🟢 IN STOCK' : '🔴 OUT'}
-                    </button>
-                    <i class="fas fa-times-circle" onclick="delDoc('products','${doc.id}')" style="position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; background:white; border-radius:50%;"></i>
+                    <b>${p.title}</b>
+                    <div class="stock-price">৳${p.price}</div>
+                    <div class="stock-actions">
+                        <button class="btn-edit" onclick="openEditModal('${doc.id}', '${p.title}', '${p.price}', \`${p.description || ''}\`)">EDIT</button>
+                        <button class="btn-del" onclick="delDoc('products','${doc.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>`;
             });
         });
 
-        // --- IMAGE & PUBLISH ---
-        async function handleMultipleImages(input) {
+        function openEditModal(id, title, price, desc) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('editDesc').value = desc;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        async function saveProductEdit() {
+            const id = document.getElementById('editId').value;
+            await db.collection("products").doc(id).update({
+                title: document.getElementById('editTitle').value,
+                price: document.getElementById('editPrice').value,
+                description: document.getElementById('editDesc').value
+            });
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // --- CORE FUNCTIONS ---
+        async function publish() {
+            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
+            if(!n || !p || imagesArray.length === 0) return alert("Missing Data!");
+            document.getElementById('saveBtn').innerText = "Publishing...";
+            await db.collection("products").add({
+                title: n, price: p, image: imagesArray[0], image2: imagesArray[1]||"", image3: imagesArray[2]||"",
+                description: document.getElementById('pDesc').value, secretCode: document.getElementById('pSecretCode').value||null,
+                secretVal: document.getElementById('pSecretVal').value||0, inStock: true, Date: Date.now()
+            });
+            location.reload();
+        }
+
+        async function handleImages(input) {
             const files = Array.from(input.files).slice(0, 3);
-            imagesArray = [];
-            document.getElementById('previewContainer').innerHTML = "";
-            document.getElementById('prompt').style.display = 'none';
-            for (let file of files) {
-                const b64 = await compress(file);
+            imagesArray = []; document.getElementById('previewContainer').innerHTML = "";
+            for (let f of files) {
+                const b64 = await compress(f);
                 imagesArray.push(b64);
-                const img = document.createElement('img'); img.src = b64; img.className = 'preview-img';
-                document.getElementById('previewContainer').appendChild(img);
+                const i = document.createElement('img'); i.src = b64; i.style.width="50px"; i.style.height="50px"; i.style.borderRadius="8px";
+                document.getElementById('previewContainer').appendChild(i);
             }
         }
 
@@ -365,28 +280,29 @@
                     const img = new Image(); img.src = e.target.result;
                     img.onload = () => {
                         const c = document.createElement('canvas'); const ctx = c.getContext("2d");
-                        c.width = 600; c.height = img.height * (600 / img.width);
+                        c.width = 500; c.height = img.height * (500/img.width);
                         ctx.drawImage(img, 0, 0, c.width, c.height);
-                        res(c.toDataURL("image/jpeg", 0.6));
+                        res(c.toAsDataURL ? c.toAsDataURL("image/jpeg", 0.7) : c.toDataURL("image/jpeg", 0.7));
                     }
                 }
             });
         }
 
-        async function publish() {
-            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value, cat = document.getElementById('pCategory').value;
-            if(!n || !p || imagesArray.length === 0) return alert("Fill all fields!");
-            document.getElementById('saveBtn').innerText = "Uploading...";
-            await db.collection("products").add({
-                title: n, price: p, category: cat, image: imagesArray[0], 
-                image2: imagesArray[1] || "", image3: imagesArray[2] || "", 
-                inStock: true, brand: document.getElementById('pBrand').value, 
-                description: document.getElementById('pDesc').value, date: Date.now()
-            });
-            location.reload();
-        }
+        async function updateStatus(id, s) { await db.collection("orders").doc(id).update({ status: s }); }
+        async function delDoc(col, id) { if(confirm("Confirm Delete?")) await db.collection(col).doc(id).delete(); }
 
-        async function delDoc(col, id) { if(confirm("Delete this?")) await db.collection(col).doc(id).delete(); }
+        // Maintenance
+        db.collection("settings").doc("maintenance").onSnapshot(doc => {
+            const s = doc.exists ? doc.data().enabled : false;
+            const btn = document.getElementById('mBtn');
+            btn.innerText = s ? "SYSTEM OFF" : "SYSTEM LIVE";
+            btn.style.background = s ? "red" : "green";
+            btn.dataset.status = s;
+        });
+        async function toggleMaintenance() {
+            const cur = document.getElementById('mBtn').dataset.status === "true";
+            await db.collection("settings").doc("maintenance").set({ enabled: !cur });
+        }
     </script>
 </body>
 </html>
