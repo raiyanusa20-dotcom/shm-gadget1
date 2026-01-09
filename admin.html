@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHM COMMAND CENTER v2.2</title>
+    <title>SHM COMMAND CENTER v2.9</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -11,49 +11,46 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --primary: #ff0000; --dark: #0f172a; --bg: #f3f4f6; --success: #10b981; --accent: #6366f1; }
+        :root { --primary: #ff0000; --dark: #0f172a; --bg: #f3f4f6; --card: #ffffff; }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 40px; }
 
-        header { background: var(--dark); color: white; padding: 25px 20px 50px; text-align: center; border-radius: 0 0 30px 30px; }
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: -30px 15px 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0; }
-        .stat-card small { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        header { background: #111; color: white; padding: 25px 20px 55px; text-align: center; border-radius: 0 0 30px 30px; border-bottom: 4px solid var(--primary); }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: -35px 15px 20px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); text-align: center; border: 1px solid #e2e8f0; }
+        .stat-card small { font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; }
         .stat-card h3 { color: var(--dark); font-size: 18px; margin-top: 5px; }
 
-        #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: none; align-items: center; justify-content: center; }
-        .login-card { background: white; padding: 35px; border-radius: 20px; width: 90%; max-width: 380px; text-align: center; }
+        #loginOverlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; }
 
-        .nav { display: flex; background: white; margin: 0 15px 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
+        .nav { display: flex; background: var(--card); margin: 0 15px 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
         .nav::-webkit-scrollbar { display: none; }
-        .tab { flex: 1; min-width: 80px; padding: 15px; border: none; background: none; font-weight: 700; font-size: 11px; color: #64748b; cursor: pointer; white-space: nowrap; }
+        .tab { flex: 1; min-width: 85px; padding: 15px; border: none; background: none; font-weight: 700; font-size: 11px; color: #64748b; cursor: pointer; white-space: nowrap; }
         .tab.active { color: var(--primary); background: #fff1f1; border-bottom: 3px solid var(--primary); }
 
         .container { padding: 0 15px; max-width: 600px; margin: auto; }
         .page { display: none; }
-        .page.active { display: block; }
+        .page.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .card { background: white; padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; position: relative; }
-        .order-meta { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+        .card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
         
+        /* STOCK & IMAGES */
         .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stock-item { background: white; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .stock-item { background: white; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; position: relative; }
         .stock-item img { width: 100%; height: 110px; object-fit: contain; border-radius: 10px; background: #f9f9f9; margin-bottom: 8px; }
-        .stock-item b { font-size: 12px; height: 32px; overflow: hidden; display: block; }
-        .stock-price { color: var(--primary); font-weight: 800; font-size: 14px; margin: 5px 0; }
-        
-        .stock-actions { display: flex; gap: 5px; margin-top: auto; }
-        .btn-edit { flex: 1; background: #f1f5f9; border: none; padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer; }
-        .btn-del { background: #fff1f1; color: var(--primary); border: none; padding: 8px; border-radius: 8px; cursor: pointer; }
+        .flash-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); color: white; font-size: 8px; font-weight: 900; padding: 3px 6px; border-radius: 4px; }
 
-        #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; }
-        .edit-box { background:white; width:92%; max-width:450px; border-radius:20px; padding:20px; max-height: 85vh; overflow-y: auto; }
-
+        /* INPUT STYLE */
         input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; font-size: 14px; }
         .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        .special-promo-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 12px; margin-bottom: 10px; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .special-promo-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 12px; margin-bottom: 12px; }
+        .flash-toggle-box { background: #fff1f1; border: 1px solid #fecaca; padding: 12px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+        #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; }
+        .edit-box { background:white; width:92%; max-width:450px; border-radius:20px; padding:20px; max-height: 85vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -70,25 +67,26 @@
         <div class="edit-box">
             <h3>Edit Product</h3>
             <input type="hidden" id="editId">
-            <p style="font-size:10px; font-weight:700; color:#64748b; margin-top:10px;">PRODUCT NAME</p>
-            <input type="text" id="editTitle">
-            <p style="font-size:10px; font-weight:700; color:#64748b;">PRICE (৳)</p>
-            <input type="number" id="editPrice">
-            <p style="font-size:10px; font-weight:700; color:#64748b;">DESCRIPTION</p>
-            <textarea id="editDesc" rows="5"></textarea>
+            <div class="flash-toggle-box">
+                <span style="font-size:12px; font-weight:800; color:red;">⚡ FLASH SALE ITEM</span>
+                <input type="checkbox" id="editFlash" style="width:20px; height:20px;">
+            </div>
+            <input type="text" id="editTitle" placeholder="Name">
+            <input type="number" id="editPrice" placeholder="Price">
+            <textarea id="editDesc" rows="5" placeholder="Description"></textarea>
             <button class="submit-btn" onclick="saveProductEdit()">UPDATE NOW</button>
-            <p onclick="document.getElementById('editModal').style.display='none'" style="text-align:center; margin-top:15px; color:red; cursor:pointer; font-size:12px;">Close</p>
+            <p onclick="document.getElementById('editModal').style.display='none'" style="text-align:center; margin-top:15px; color:red; cursor:pointer;">Close</p>
         </div>
     </div>
 
     <header>
-        <h2>SHM COMMAND</h2>
-        <p style="font-size:11px; opacity:0.7;">v2.2 • All-In-One Dashboard</p>
+        <h2>SHM COMMAND CENTER</h2>
+        <p style="font-size:11px; opacity:0.7;">v2.9 • Full Power Mode</p>
     </header>
 
     <div class="stats-row">
         <div class="stat-card"><small>Revenue</small><h3 id="statRev">৳ 0</h3></div>
-        <div class="stat-card"><small>Active Orders</small><h3 id="statOrders">0</h3></div>
+        <div class="stat-card"><small>Live Orders</small><h3 id="statOrders">0</h3></div>
     </div>
 
     <nav class="nav">
@@ -99,32 +97,33 @@
     </nav>
 
     <div class="container">
-        <div id="orders" class="page active">
-            <div id="orderList">Loading...</div>
-        </div>
+        <div id="orders" class="page active"><div id="orderList">Loading...</div></div>
 
-        <div id="stock" class="page">
-            <div id="stockList" class="stock-grid"></div>
-        </div>
+        <div id="stock" class="page"><div id="stockList" class="stock-grid"></div></div>
 
         <div id="add" class="page">
             <div class="card">
-                <div id="previewContainer" style="display:flex; gap:5px; margin-bottom:10px;"></div>
-                <button onclick="document.getElementById('file').click()" style="width:100%; padding:10px; border:2px dashed #ccc; border-radius:12px; background:none; margin-bottom:10px; cursor:pointer;">+ Add Images</button>
+                <div id="previewContainer" style="display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding:5px;"></div>
+                <button onclick="document.getElementById('file').click()" style="width:100%; padding:15px; border:2px dashed #ccc; border-radius:12px; background:none; margin-bottom:12px; cursor:pointer; font-weight:700;">+ UPLOAD IMAGES (UP TO 3)</button>
                 <input type="file" id="file" hidden multiple onchange="handleImages(this)">
                 
+                <div class="flash-toggle-box">
+                    <span style="font-size:12px; font-weight:800; color:red;">⚡ ADD TO FLASH SALE?</span>
+                    <input type="checkbox" id="pFlash" style="width:20px; height:20px;">
+                </div>
+
                 <input type="text" id="pName" placeholder="Product Name">
                 <input type="number" id="pPrice" placeholder="Price (৳)">
                 
                 <div class="special-promo-box">
-                    <p style="font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 5px;">ITEM-SPECIFIC PROMO</p>
+                    <p style="font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 5px;">ITEM-SPECIFIC SECRET PROMO</p>
                     <div style="display:flex; gap:10px;">
                         <input type="text" id="pSecretCode" placeholder="Code" style="margin:0; font-size:12px;">
                         <input type="number" id="pSecretVal" placeholder="৳ Off" style="margin:0; font-size:12px; width:100px;">
                     </div>
                 </div>
                 
-                <textarea id="pDesc" placeholder="Product Description..." rows="4"></textarea>
+                <textarea id="pDesc" placeholder="Full Product Description..." rows="4"></textarea>
                 <button class="submit-btn" id="saveBtn" onclick="publish()">PUBLISH PRODUCT</button>
             </div>
         </div>
@@ -137,8 +136,8 @@
                 </div>
             </div>
             <div class="card">
-                <h3>Global Promos</h3>
-                <input type="text" id="promoCode" placeholder="CODE">
+                <h3>Global Store Promo</h3>
+                <input type="text" id="promoCode" placeholder="CODE (e.g. SAVE10)">
                 <input type="number" id="promoVal" placeholder="৳ Value">
                 <button class="submit-btn" onclick="addPromo()">Add Global Promo</button>
             </div>
@@ -161,7 +160,7 @@
             if(document.getElementById('adminPass').value === "shm2026") {
                 sessionStorage.setItem("admin_auth", "true");
                 document.getElementById('loginOverlay').style.display='none';
-            } else { alert("Wrong Key!"); }
+            } else { alert("Incorrect Key!"); }
         }
         if(sessionStorage.getItem("admin_auth") === "true") document.getElementById('loginOverlay').style.display='none';
 
@@ -172,103 +171,16 @@
             e.currentTarget.classList.add('active');
         }
 
-        // --- ORDER LOGIC ---
-        db.collection("orders").orderBy("Date","desc").onSnapshot(snap => {
-            const list = document.getElementById('orderList');
-            let rev = 0, active = 0;
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const o = doc.data();
-                const s = o.status || "Pending";
-                if(s === "Delivered") rev += parseInt(o.Total || 0);
-                if(s !== "Delivered" && s !== "Cancelled") active++;
-
-                list.innerHTML += `
-                <div class="card" style="border-left: 5px solid ${getColor(s)}; opacity: ${s=='Cancelled'?'0.5':'1'}">
-                    <div class="order-meta"><span>${doc.id.substring(0,6)}</span> <span>${o.Date}</span></div>
-                    <b>${o.Product}</b> <span style="color:red; font-weight:bold;">৳${o.Total}</span>
-                    <p style="font-size:12px; margin:5px 0;">${o.Customer} | ${o.Mobile}</p>
-                    <div style="display:flex; gap:5px; margin-top:10px;">
-                        <select onchange="updateStatus('${doc.id}', this.value)" style="margin:0; padding:8px; font-size:12px; flex:1;">
-                            <option value="Pending" ${s=='Pending'?'selected':''}>Pending</option>
-                            <option value="Processing" ${s=='Processing'?'selected':''}>Processing</option>
-                            <option value="Shipped" ${s=='Shipped'?'selected':''}>Shipped</option>
-                            <option value="Delivered" ${s=='Delivered'?'selected':''}>Delivered</option>
-                            <option value="Cancelled" ${s=='Cancelled'?'selected':''}>Cancelled</option>
-                        </select>
-                        <button onclick="delDoc('orders','${doc.id}')" style="background:#fff1f1; color:red; border:1px solid #fee2e2; border-radius:12px; width:45px;"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('statRev').innerText = "৳ " + rev.toLocaleString();
-            document.getElementById('statOrders').innerText = active;
-        });
-
-        function getColor(s) {
-            if(s==='Delivered') return '#10b981';
-            if(s==='Cancelled') return '#64748b';
-            if(s==='Shipped') return '#3b82f6';
-            if(s==='Processing') return '#8b5cf6';
-            return '#f59e0b';
-        }
-
-        // --- STOCK LOGIC ---
-        db.collection("products").onSnapshot(snap => {
-            const list = document.getElementById('stockList');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                list.innerHTML += `
-                <div class="stock-item">
-                    <img src="${p.image}">
-                    <b>${p.title}</b>
-                    <div class="stock-price">৳${p.price}</div>
-                    <div class="stock-actions">
-                        <button class="btn-edit" onclick="openEditModal('${doc.id}', '${p.title}', '${p.price}', \`${p.description || ''}\`)">EDIT</button>
-                        <button class="btn-del" onclick="delDoc('products','${doc.id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            });
-        });
-
-        function openEditModal(id, title, price, desc) {
-            document.getElementById('editId').value = id;
-            document.getElementById('editTitle').value = title;
-            document.getElementById('editPrice').value = price;
-            document.getElementById('editDesc').value = desc;
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        async function saveProductEdit() {
-            const id = document.getElementById('editId').value;
-            await db.collection("products").doc(id).update({
-                title: document.getElementById('editTitle').value,
-                price: document.getElementById('editPrice').value,
-                description: document.getElementById('editDesc').value
-            });
-            document.getElementById('editModal').style.display = 'none';
-        }
-
-        // --- CORE FUNCTIONS ---
-        async function publish() {
-            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
-            if(!n || !p || imagesArray.length === 0) return alert("Missing Data!");
-            document.getElementById('saveBtn').innerText = "Publishing...";
-            await db.collection("products").add({
-                title: n, price: p, image: imagesArray[0], image2: imagesArray[1]||"", image3: imagesArray[2]||"",
-                description: document.getElementById('pDesc').value, secretCode: document.getElementById('pSecretCode').value||null,
-                secretVal: document.getElementById('pSecretVal').value||0, inStock: true, Date: Date.now()
-            });
-            location.reload();
-        }
-
+        // --- MULTIPLE IMAGE HANDLING ---
         async function handleImages(input) {
             const files = Array.from(input.files).slice(0, 3);
-            imagesArray = []; document.getElementById('previewContainer').innerHTML = "";
+            imagesArray = []; 
+            document.getElementById('previewContainer').innerHTML = "";
             for (let f of files) {
                 const b64 = await compress(f);
                 imagesArray.push(b64);
-                const i = document.createElement('img'); i.src = b64; i.style.width="50px"; i.style.height="50px"; i.style.borderRadius="8px";
+                const i = document.createElement('img'); 
+                i.src = b64; i.style.width="60px"; i.style.height="60px"; i.style.borderRadius="10px"; i.style.border="2px solid red";
                 document.getElementById('previewContainer').appendChild(i);
             }
         }
@@ -282,20 +194,108 @@
                         const c = document.createElement('canvas'); const ctx = c.getContext("2d");
                         c.width = 500; c.height = img.height * (500/img.width);
                         ctx.drawImage(img, 0, 0, c.width, c.height);
-                        res(c.toAsDataURL ? c.toAsDataURL("image/jpeg", 0.7) : c.toDataURL("image/jpeg", 0.7));
+                        res(c.toDataURL("image/jpeg", 0.7));
                     }
                 }
             });
         }
 
+        // --- ORDER LOGIC ---
+        db.collection("orders").orderBy("Date","desc").onSnapshot(snap => {
+            const list = document.getElementById('orderList');
+            let rev = 0, active = 0; list.innerHTML = "";
+            snap.forEach(doc => {
+                const o = doc.data(); const s = o.status || "Pending";
+                if(s === "Delivered") rev += parseInt(o.Total || 0);
+                if(s !== "Delivered" && s !== "Cancelled") active++;
+
+                list.innerHTML += `
+                <div class="card" style="border-left: 5px solid ${getCol(s)}">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-bottom:5px;">
+                        <span>ID: ${doc.id.substring(0,6)}</span> <span>${o.Date}</span>
+                    </div>
+                    <b>${o.Product}</b> <span style="color:red; font-weight:bold;">৳${o.Total}</span>
+                    <p style="font-size:12px; margin:5px 0;">${o.Customer} | ${o.Mobile}</p>
+                    <div style="display:flex; gap:5px;">
+                        <select onchange="updateStatus('${doc.id}', this.value)" style="margin:0; padding:8px; font-size:12px; flex:1;">
+                            <option value="Pending" ${s=='Pending'?'selected':''}>Pending</option>
+                            <option value="Shipped" ${s=='Shipped'?'selected':''}>Shipped</option>
+                            <option value="Delivered" ${s=='Delivered'?'selected':''}>Delivered</option>
+                            <option value="Cancelled" ${s=='Cancelled'?'selected':''}>Cancelled</option>
+                        </select>
+                        <button onclick="delDoc('orders','${doc.id}')" style="background:#fff1f1; color:red; border:none; width:40px; border-radius:10px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('statRev').innerText = "৳ " + rev.toLocaleString();
+            document.getElementById('statOrders').innerText = active;
+        });
+
+        function getCol(s) { return s==='Delivered'?'#10b981':s==='Cancelled'?'#64748b':s==='Shipped'?'#3b82f6':'#f59e0b'; }
+
+        // --- STOCK LOGIC ---
+        db.collection("products").onSnapshot(snap => {
+            const list = document.getElementById('stockList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data();
+                list.innerHTML += `
+                <div class="stock-item">
+                    ${p.isFlashSale ? '<div class="flash-badge">FLASH</div>' : ''}
+                    <img src="${p.image}">
+                    <b style="font-size:11px;">${p.title}</b>
+                    <div style="color:red; font-weight:bold; font-size:13px; margin:5px 0;">৳${p.price}</div>
+                    <div style="display:flex; gap:5px; margin-top:auto;">
+                        <button class="submit-btn" style="padding:8px; font-size:10px;" onclick="openEditModal('${doc.id}', '${p.title}', '${p.price}', \`${p.description || ''}\`, ${p.isFlashSale || false})">EDIT</button>
+                        <button style="background:#fff1f1; color:red; border:none; padding:8px; border-radius:10px;" onclick="delDoc('products','${doc.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        function openEditModal(id, title, price, desc, isFlash) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('editDesc').value = desc;
+            document.getElementById('editFlash').checked = isFlash;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        async function saveProductEdit() {
+            await db.collection("products").doc(document.getElementById('editId').value).update({
+                title: document.getElementById('editTitle').value,
+                price: document.getElementById('editPrice').value,
+                description: document.getElementById('editDesc').value,
+                isFlashSale: document.getElementById('editFlash').checked
+            });
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        async function publish() {
+            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
+            if(!n || !p || imagesArray.length === 0) return alert("Missing Info!");
+            document.getElementById('saveBtn').innerText = "Publishing...";
+            await db.collection("products").add({
+                title: n, price: p, 
+                image: imagesArray[0], image2: imagesArray[1]||"", image3: imagesArray[2]||"",
+                description: document.getElementById('pDesc').value, 
+                secretCode: document.getElementById('pSecretCode').value||null,
+                secretVal: document.getElementById('pSecretVal').value||0,
+                isFlashSale: document.getElementById('pFlash').checked,
+                inStock: true, Date: Date.now()
+            });
+            location.reload();
+        }
+
         async function updateStatus(id, s) { await db.collection("orders").doc(id).update({ status: s }); }
         async function delDoc(col, id) { if(confirm("Confirm Delete?")) await db.collection(col).doc(id).delete(); }
 
-        // Maintenance
+        // Maintenance & Config
         db.collection("settings").doc("maintenance").onSnapshot(doc => {
             const s = doc.exists ? doc.data().enabled : false;
             const btn = document.getElementById('mBtn');
-            btn.innerText = s ? "SYSTEM OFF" : "SYSTEM LIVE";
+            btn.innerText = s ? "OFF" : "LIVE";
             btn.style.background = s ? "red" : "green";
             btn.dataset.status = s;
         });
