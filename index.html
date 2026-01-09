@@ -95,7 +95,7 @@
         .price { color: var(--red); font-weight: 700; font-size: 16px; margin-top: 5px; }
         .title { font-size: 11px; color: var(--text); height: 32px; overflow: hidden; margin-bottom: 8px; opacity: 0.8; line-height: 1.4; }
         
-        /* HOT BADGE - UPDATED TO RED PULSE */
+        /* HOT BADGE */
         .hot-badge { 
             position: absolute; 
             top: 8px; 
@@ -127,7 +127,6 @@
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .page-info { font-size: 13px; font-weight: 600; color: var(--text); }
         
-        /* PROMO SECTION - PREMIUM STYLE */
         .promo-container {
             margin: 15px 0;
             background: var(--bg);
@@ -157,17 +156,9 @@
             cursor: pointer;
             transition: 0.3s;
         }
-        .promo-btn.applied {
-            background: var(--green);
-        }
-        .promo-check {
-            color: var(--green);
-            font-size: 18px;
-            margin-right: 10px;
-            display: none;
-        }
+        .promo-btn.applied { background: var(--green); }
+        .promo-check { color: var(--green); font-size: 18px; margin-right: 10px; display: none; }
 
-        /* DETAIL VIEW SLIDER WITH ARROWS */
         #detailView { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:2000; overflow-y:auto; }
         .dv-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--card); z-index: 10; }
         .dv-body { padding: 20px; }
@@ -201,7 +192,6 @@
         .spec-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
         .spec-row span { color: var(--text); opacity: 0.6; }
 
-        /* FLOATING WHATSAPP - STATIC CLEAN */
         .wa-float { 
             position: fixed; 
             bottom: 20px; 
@@ -224,7 +214,6 @@
         .modal-box { background:var(--card); color: var(--text); width:92%; max-width: 420px; margin: 10% auto; padding: 25px; border-radius: 15px; text-align: center; position: relative; border: 1px solid var(--border); }
         .modal-box input { width:100%; padding: 14px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; background: var(--bg); color: var(--text); font-size: 14px; }
         
-        /* TOAST & FOMO */
         #custom-toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
             background: var(--dark); color: white; padding: 12px 25px; border-radius: 12px;
@@ -247,9 +236,20 @@
         .fomo-img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
         .fomo-txt { font-size: 11px; color: var(--text); line-height: 1.3; }
 
+        /* NEW SEO & BIG TITLE SECTION STYLES */
+        .big-about-section { padding: 60px 20px; background: var(--card); margin-top: 20px; border-top: 2px solid var(--red); }
+        .massive-title { font-size: 48px; font-weight: 800; color: var(--dark); line-height: 1.1; margin-bottom: 30px; text-transform: uppercase; letter-spacing: -2px; }
+        .seo-content { column-count: 2; column-gap: 40px; color: var(--text); opacity: 0.8; font-size: 15px; line-height: 1.8; }
+        .keyword-tag { color: var(--red); font-weight: 600; }
+        .fb-link-btn { display: inline-flex; align-items: center; gap: 10px; background: #1877F2; color: white !important; padding: 14px 30px; border-radius: 8px; margin-top: 25px; font-weight: 700; text-transform: uppercase; font-size: 13px; text-decoration: none; }
+        @media (max-width: 768px) { .massive-title { font-size: 32px; } .seo-content { column-count: 1; } }
+
+        /* NEW ENHANCED FOOTER STYLES */
         footer { background: #000; color: #fff; padding: 60px 20px 30px; margin-top: 40px; text-align: left; }
         .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; }
-        .footer-col h4 { font-size: 18px; margin-bottom: 25px; color: var(--red); }
+        .footer-col h4 { font-size: 18px; margin-bottom: 25px; color: var(--red); text-transform: uppercase; letter-spacing: 1px; }
+        .footer-col p, .footer-col a { color: #aaa; font-size: 14px; text-decoration: none; line-height: 2; display: block; transition: 0.3s; }
+        .footer-col a:hover { color: var(--red); padding-left: 5px; }
         .footer-bottom { border-top: 1px solid #222; margin-top: 40px; padding-top: 25px; text-align: center; color: #777; font-size: 12px; }
 
         #maintenanceOverlay { display:none; position:fixed; inset:0; background:white; z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
@@ -308,6 +308,19 @@
         <span class="page-info" id="pageInfo">Page 1</span>
         <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next</button>
     </div>
+
+    <section class="big-about-section">
+        <h1 class="massive-title">THE ULTIMATE GADGET DESTINATION <br>IN BANGLADESH</h1>
+        <div class="seo-content">
+            <p>Welcome to <b class="keyword-tag">SHM GADGET ZONE</b>, the leading <b class="keyword-tag">authentic gadget importer in Bangladesh</b>. If you are looking for the <b class="keyword-tag">best smartwatch price in BD</b>, you have come to the right place. We specialize in <b class="keyword-tag">premium smartwatches</b>, <b class="keyword-tag">original Kieslect</b>, <b class="keyword-tag">Amazfit BD</b>, and <b class="keyword-tag">Huawei smart accessories</b>.</p>
+            <p>Our collection features the most <b class="keyword-tag">trending tech gadgets 2026</b>, including <b class="keyword-tag">active noise cancelling earbuds</b>, <b class="keyword-tag">best TWS in Bangladesh</b>, and <b class="keyword-tag">premium mobile accessories</b>. We are the top-rated <b class="keyword-tag">online gadget shop in Dhaka</b> offering <b class="keyword-tag">cash on delivery</b> nationwide.</p>
+            <p>Search for <b class="keyword-tag">waterproof smartwatches</b>, <b class="keyword-tag">fitness trackers BD</b>, or <b class="keyword-tag">gaming headphones price in Bangladesh</b> and find us at the top. We provide <b class="keyword-tag">100% genuine products</b> with <b class="keyword-tag">official warranty</b>. Shop now for <b class="keyword-tag">Apple gadgets</b>, <b class="keyword-tag">Samsung accessories</b>, and <b class="keyword-tag">smart home devices</b>.</p>
+            <p>Stay connected with the <b class="keyword-tag">best tech store in Chittagong</b> and <b class="keyword-tag">Sylhet</b>. We are your trusted partner for <b class="keyword-tag">wholesale gadgets BD</b> and <b class="keyword-tag">retail electronic shop</b>. Experience the <b class="keyword-tag">fastest delivery</b> and <b class="keyword-tag">reliable customer support</b> for all your <b class="keyword-tag">digital lifestyle</b> needs.</p>
+        </div>
+        <a href="https://www.facebook.com/share/1GL5qrTuqU/" target="_blank" class="fb-link-btn">
+            <i class="fab fa-facebook-f"></i> Follow us on Facebook
+        </a>
+    </section>
 
     <div id="detailView">
         <div class="dv-header" onclick="closeDetail()"><i class="fas fa-arrow-left"></i> <b>Back to Shop</b></div>
@@ -380,16 +393,34 @@
     <footer>
         <div class="footer-grid">
             <div class="footer-col">
-                <h4>SHM Gadget Zone</h4>
-                <p>Premium importer of gadgets and smart accessories in Bangladesh.</p>
+                <h4>SHM GADGET ZONE</h4>
+                <p>SHM Gadget Zone is your premium destination for authentic smartwatches and high-quality mobile accessories in Bangladesh. We prioritize quality and customer satisfaction above all.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Support & Policy</h4>
+                <a href="javascript:void(0)">Warranty Policy</a>
+                <a href="javascript:void(0)">Replacement Guide</a>
+                <a href="javascript:void(0)">Delivery Information</a>
+                <a href="https://www.facebook.com/share/1GL5qrTuqU/">Official Facebook</a>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Search</h4>
+                <p>Smartwatch Price in BD</p>
+                <p>Best Earbuds 2026</p>
+                <p>Original Gadget Importer</p>
+                <p>Dhaka Tech Store</p>
             </div>
             <div class="footer-col">
                 <h4>Contact Info</h4>
-                <p>01313607293</p>
-                <p>raiyanusa20@gmail.com</p>
+                <p><i class="fas fa-phone"></i> 01313607293</p>
+                <p><i class="fas fa-envelope"></i> raiyanusa20@gmail.com</p>
+                <p><i class="fas fa-map-marker-alt"></i> Dhaka, Bangladesh</p>
             </div>
         </div>
-        <div class="footer-bottom">&copy; 2026 SHM Gadget Zone.</div>
+        <div class="footer-bottom">
+            &copy; 2026 SHM Gadget Zone. All Rights Reserved. <br>
+            Search Engine Optimized for Top Google Ranking.
+        </div>
     </footer>
 
     <script>
@@ -462,7 +493,6 @@
             document.getElementById('flashSection').style.display = 'block';
             fGrid.innerHTML = items.map(p => `<div class="flash-item" onclick="openDetail('${p.id}')"><img src="${p.image}"><div class="f-price">৳${p.price}</div></div>`).join('');
             
-            // Auto-scroll Flash Sale
             setInterval(() => {
                 fGrid.scrollBy({ left: 140, behavior: 'smooth' });
                 if (fGrid.scrollLeft + fGrid.offsetWidth >= fGrid.scrollWidth) fGrid.scrollLeft = 0;
