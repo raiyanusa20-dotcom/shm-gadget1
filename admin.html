@@ -3,90 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHM COMMAND CENTER v2.9</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>SHM COMMAND CENTER v3.0 PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 
     <style>
-        :root { --primary: #ff0000; --dark: #0f172a; --bg: #f3f4f6; --card: #ffffff; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--dark); padding-bottom: 40px; }
+        :root {
+            --primary: #ef4444; /* Red-500 */
+            --primary-hover: #dc2626;
+            --dark: #0f172a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-sub: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
 
-        header { background: #111; color: white; padding: 25px 20px 55px; text-align: center; border-radius: 0 0 30px 30px; border-bottom: 4px solid var(--primary); }
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: -35px 15px 20px; }
-        .stat-card { background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); text-align: center; border: 1px solid #e2e8f0; }
-        .stat-card small { font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; }
-        .stat-card h3 { color: var(--dark); font-size: 18px; margin-top: 5px; }
+        /* Dark Mode Support via class */
+        body.dark-mode {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --dark: #f8fafc;
+            --border: #334155;
+            --text-sub: #94a3b8;
+        }
 
-        #loginOverlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; transition: background 0.2s, color 0.2s; }
+        body { background: var(--bg); color: var(--dark); padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
 
-        .nav { display: flex; background: var(--card); margin: 0 15px 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow-x: auto; position: sticky; top: 10px; z-index: 100; scrollbar-width: none; }
+        /* HEADER */
+        header { background: #111; color: white; padding: 25px 20px 60px; text-align: center; border-radius: 0 0 30px 30px; border-bottom: 4px solid var(--primary); position: relative; }
+        .logout-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: -40px 15px 20px; position: relative; z-index: 10; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border); }
+        .stat-card small { font-size: 10px; color: var(--text-sub); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card h3 { color: var(--dark); font-size: 20px; margin-top: 5px; font-weight: 800; }
+
+        /* NAVIGATION */
+        .nav { display: flex; background: var(--card); margin: 0 15px 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; position: sticky; top: 15px; z-index: 90; border: 1px solid var(--border); scrollbar-width: none; }
         .nav::-webkit-scrollbar { display: none; }
-        .tab { flex: 1; min-width: 85px; padding: 15px; border: none; background: none; font-weight: 700; font-size: 11px; color: #64748b; cursor: pointer; white-space: nowrap; }
-        .tab.active { color: var(--primary); background: #fff1f1; border-bottom: 3px solid var(--primary); }
+        .tab { flex: 1; min-width: 90px; padding: 14px; border: none; background: none; font-weight: 700; font-size: 11px; color: var(--text-sub); cursor: pointer; white-space: nowrap; }
+        .tab.active { color: var(--primary); background: rgba(239, 68, 68, 0.05); border-bottom: 3px solid var(--primary); }
 
-        .container { padding: 0 15px; max-width: 600px; margin: auto; }
+        /* LAYOUT & UTILS */
+        .container { padding: 0 15px; max-width: 800px; margin: auto; }
         .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .page.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+        .card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-xs { font-size: 11px; }
+        .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+
+        /* INPUTS */
+        .input-group { margin-bottom: 12px; }
+        input, textarea, select { width: 100%; padding: 14px; background: var(--bg); border: 1.5px solid var(--border); color: var(--dark); border-radius: 12px; outline: none; font-size: 14px; }
+        input:focus, textarea:focus { border-color: var(--primary); }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .submit-btn:hover { background: var(--primary-hover); }
+        .submit-btn:disabled { background: var(--text-sub); opacity: 0.7; cursor: not-allowed; }
+
+        /* ORDERS */
+        .filters { display: flex; gap: 8px; margin-bottom: 15px; }
+        .order-card { border-left: 4px solid var(--border); position: relative; }
+        .status-select { padding: 6px 10px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+
+        /* STOCK GRID */
+        .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        .stock-item { background: var(--card); padding: 10px; border-radius: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .stock-item img { width: 100%; height: 120px; object-fit: contain; border-radius: 10px; background: #f1f5f9; margin-bottom: 8px; }
+        .flash-badge { position: absolute; top: 8px; left: 8px; background: var(--primary); color: white; font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 20px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        /* LOGIN OVERLAY */
+        #loginOverlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 40px; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; }
+
+        /* TOAST & LOADERS */
+        .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 400px; }
+        .toast { background: #333; color: #fff; padding: 12px 20px; border-radius: 50px; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); opacity: 0; animation: toastUp 0.3s forwards; pointer-events: all; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .toast.success { background: #059669; }
+        .toast.error { background: #dc2626; }
+        @keyframes toastUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* MODAL */
+        #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
+        .edit-box { background:var(--card); width:92%; max-width:500px; border-radius:24px; padding:25px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         
-        /* STOCK & IMAGES */
-        .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stock-item { background: white; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; position: relative; }
-        .stock-item img { width: 100%; height: 110px; object-fit: contain; border-radius: 10px; background: #f9f9f9; margin-bottom: 8px; }
-        .flash-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); color: white; font-size: 8px; font-weight: 900; padding: 3px 6px; border-radius: 4px; }
+        /* SPINNER */
+        .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; display: none; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* INPUT STYLE */
-        input, textarea, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; font-size: 14px; }
-        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
-
-        .special-promo-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 12px; margin-bottom: 12px; }
-        .flash-toggle-box { background: #fff1f1; border: 1px solid #fecaca; padding: 12px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-
-        #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; }
-        .edit-box { background:white; width:92%; max-width:450px; border-radius:20px; padding:20px; max-height: 85vh; overflow-y: auto; }
     </style>
 </head>
 <body>
 
     <div id="loginOverlay">
-        <div class="login-card">
-            <h2>SHM ADMIN</h2>
-            <input type="password" id="adminPass" placeholder="Secret Key" style="margin-top:20px;">
-            <button class="submit-btn" onclick="verifyAdmin()">Unlock</button>
-        </div>
-    </div>
-
-    <div id="editModal">
-        <div class="edit-box">
-            <h3>Edit Product</h3>
-            <input type="hidden" id="editId">
-            <div class="flash-toggle-box">
-                <span style="font-size:12px; font-weight:800; color:red;">⚡ FLASH SALE ITEM</span>
-                <input type="checkbox" id="editFlash" style="width:20px; height:20px;">
-            </div>
-            <input type="text" id="editTitle" placeholder="Name">
-            <input type="number" id="editPrice" placeholder="Price">
-            <textarea id="editDesc" rows="5" placeholder="Description"></textarea>
-            <button class="submit-btn" onclick="saveProductEdit()">UPDATE NOW</button>
-            <p onclick="document.getElementById('editModal').style.display='none'" style="text-align:center; margin-top:15px; color:red; cursor:pointer;">Close</p>
+        <div class="login-box">
+            <h2 style="color:#000; margin-bottom:5px;">SHM COMMAND</h2>
+            <p style="color:#64748b; font-size:12px; margin-bottom:25px;">Secure Admin Access</p>
+            <form onsubmit="handleLogin(event)">
+                <input type="email" id="loginEmail" placeholder="admin@shm.com" required style="margin-bottom:10px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <input type="password" id="loginPass" placeholder="Password" required style="margin-bottom:20px; background:#f8fafc; border:1px solid #e2e8f0;">
+                <button type="submit" class="submit-btn" id="loginBtn">
+                    <span class="btn-text">UNLOCK PANEL</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+            <p id="loginError" style="color:red; font-size:12px; margin-top:15px; display:none;"></p>
         </div>
     </div>
 
     <header>
-        <h2>SHM COMMAND CENTER</h2>
-        <p style="font-size:11px; opacity:0.7;">v2.9 • Full Power Mode</p>
+        <button class="logout-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <h2>SHM COMMAND</h2>
+        <p style="font-size:11px; opacity:0.7;">v3.0 PRO • Realtime Connection</p>
     </header>
 
     <div class="stats-row">
-        <div class="stat-card"><small>Revenue</small><h3 id="statRev">৳ 0</h3></div>
-        <div class="stat-card"><small>Live Orders</small><h3 id="statOrders">0</h3></div>
+        <div class="stat-card">
+            <small>Total Revenue</small>
+            <h3 id="statRev">৳ 0</h3>
+        </div>
+        <div class="stat-card">
+            <small>Live Orders</small>
+            <h3 id="statOrders">0</h3>
+        </div>
     </div>
 
     <nav class="nav">
@@ -97,72 +147,187 @@
     </nav>
 
     <div class="container">
-        <div id="orders" class="page active"><div id="orderList">Loading...</div></div>
+        
+        <div id="orders" class="page active">
+            <div class="filters">
+                <input type="text" id="orderSearch" placeholder="Search Name/ID..." onkeyup="debounceSearch()" style="flex:2; margin:0;">
+                <select id="statusFilter" onchange="renderOrders()" style="flex:1; margin:0; padding:10px;">
+                    <option value="All">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                </select>
+                <button onclick="exportCSV()" style="width:45px; background:var(--dark); color:white; border:none; border-radius:12px;"><i class="fas fa-download"></i></button>
+            </div>
+            <div id="orderList">
+                <div style="text-align:center; padding:20px; color:var(--text-sub);">Loading orders...</div>
+            </div>
+        </div>
 
-        <div id="stock" class="page"><div id="stockList" class="stock-grid"></div></div>
+        <div id="stock" class="page">
+            <div class="input-group">
+                <input type="text" id="stockSearch" placeholder="Filter Products..." onkeyup="filterStock()">
+            </div>
+            <div id="stockList" class="stock-grid"></div>
+        </div>
 
         <div id="add" class="page">
             <div class="card">
-                <div id="previewContainer" style="display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding:5px;"></div>
-                <button onclick="document.getElementById('file').click()" style="width:100%; padding:15px; border:2px dashed #ccc; border-radius:12px; background:none; margin-bottom:12px; cursor:pointer; font-weight:700;">+ UPLOAD IMAGES (UP TO 3)</button>
-                <input type="file" id="file" hidden multiple onchange="handleImages(this)">
+                <div id="previewContainer" style="display:flex; gap:8px; margin-bottom:15px; overflow-x:auto; padding:5px;"></div>
                 
-                <div class="flash-toggle-box">
-                    <span style="font-size:12px; font-weight:800; color:red;">⚡ ADD TO FLASH SALE?</span>
+                <button onclick="document.getElementById('file').click()" style="width:100%; padding:20px; border:2px dashed var(--border); border-radius:12px; background:var(--bg); margin-bottom:15px; cursor:pointer; font-weight:700; color:var(--text-sub);">
+                    <i class="fas fa-cloud-upload-alt"></i> UPLOAD IMAGES (Max 3)
+                </button>
+                <input type="file" id="file" hidden multiple accept="image/*" onchange="handleImages(this)">
+                
+                <div class="flex-between" style="background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3; margin-bottom:15px;">
+                    <span style="font-size:12px; font-weight:800; color:var(--primary);">⚡ FLASH SALE ITEM</span>
                     <input type="checkbox" id="pFlash" style="width:20px; height:20px;">
                 </div>
 
-                <input type="text" id="pName" placeholder="Product Name">
-                <input type="number" id="pPrice" placeholder="Price (৳)">
-                
-                <div class="special-promo-box">
-                    <p style="font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 5px;">ITEM-SPECIFIC SECRET PROMO</p>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+                    <input type="text" id="pName" placeholder="Product Name">
+                    <input type="number" id="pPrice" placeholder="Price (৳)">
+                </div>
+
+                <div class="card" style="background: #f0fdf4; border-color: #bbf7d0; padding:12px; margin: 0 0 12px 0;">
+                    <p class="text-xs" style="color: #166534; font-weight:800; margin-bottom:8px;">ITEM SECRET PROMO (Optional)</p>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="pSecretCode" placeholder="Code" style="margin:0; font-size:12px;">
-                        <input type="number" id="pSecretVal" placeholder="৳ Off" style="margin:0; font-size:12px; width:100px;">
+                        <input type="text" id="pSecretCode" placeholder="Code (e.g. VIP200)" style="margin:0; background:white;">
+                        <input type="number" id="pSecretVal" placeholder="Amount Off" style="margin:0; background:white;">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:8px;">
+                         <input type="number" id="pSecretLimit" placeholder="Max Usage" style="margin:0; background:white;">
+                         <input type="date" id="pSecretExpiry" style="margin:0; background:white;">
                     </div>
                 </div>
                 
                 <textarea id="pDesc" placeholder="Full Product Description..." rows="4"></textarea>
-                <button class="submit-btn" id="saveBtn" onclick="publish()">PUBLISH PRODUCT</button>
+                <button class="submit-btn" id="saveBtn" onclick="publishProduct()">
+                    <span class="btn-text">PUBLISH PRODUCT</span>
+                    <div class="spinner"></div>
+                </button>
             </div>
         </div>
 
         <div id="config" class="page">
-            <div class="card" style="background:#000; color:#fff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Maintenance Mode</span>
-                    <button id="mBtn" onclick="toggleMaintenance()" style="padding:8px 15px; border-radius:8px; border:none; font-weight:bold;"></button>
+            <div class="card" style="background:#0f172a; color:#fff; border:none;">
+                <div class="flex-between">
+                    <div>
+                        <strong>Maintenance Mode</strong>
+                        <p class="text-xs" style="opacity:0.6;">Shut down customer app</p>
+                    </div>
+                    <button id="mBtn" onclick="toggleMaintenance()" style="padding:8px 18px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">LOADING</button>
                 </div>
             </div>
+
             <div class="card">
                 <h3>Global Store Promo</h3>
-                <input type="text" id="promoCode" placeholder="CODE (e.g. SAVE10)">
-                <input type="number" id="promoVal" placeholder="৳ Value">
-                <button class="submit-btn" onclick="addPromo()">Add Global Promo</button>
+                <p class="text-xs" style="color:var(--text-sub); margin-bottom:10px;">Applies to all orders</p>
+                <input type="text" id="promoCode" placeholder="Code (e.g. SAVE10)">
+                <input type="number" id="promoVal" placeholder="Discount Amount (৳)">
+                <button class="submit-btn" onclick="setGlobalPromo()">Update Global Promo</button>
             </div>
-            <div id="promoList"></div>
+
+            <div class="card">
+                <h3>Audit Logs</h3>
+                <div id="logList" style="max-height:200px; overflow-y:auto; font-size:11px; color:var(--text-sub);">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastBox"></div>
+
+    <div id="editModal">
+        <div class="edit-box">
+            <div class="flex-between" style="margin-bottom:15px;">
+                <h3>Edit Product</h3>
+                <i class="fas fa-times" onclick="closeEditModal()" style="cursor:pointer; font-size:20px;"></i>
+            </div>
+            <input type="hidden" id="editId">
+            
+            <div class="flex-between" style="background: #fff1f2; padding: 10px; border-radius: 10px; margin-bottom:12px;">
+                <span style="font-size:12px; font-weight:800; color:var(--primary);">⚡ FLASH SALE</span>
+                <input type="checkbox" id="editFlash" style="width:20px; height:20px;">
+            </div>
+
+            <input type="text" id="editTitle" placeholder="Name">
+            <input type="number" id="editPrice" placeholder="Price">
+            <textarea id="editDesc" rows="5" placeholder="Description"></textarea>
+            
+            <button class="submit-btn" onclick="saveProductEdit()" id="editSaveBtn">UPDATE NOW</button>
         </div>
     </div>
 
     <script>
+        // === 1. FIREBASE CONFIG (REPLACE WITH YOUR KEYS) ===
         const firebaseConfig = { 
             apiKey: "AIzaSyCjb15aH65juySeyZUA4yTPrLx7HosP1Cs", 
             authDomain: "shm-gadget-zone-f3769.firebaseapp.com", 
             projectId: "shm-gadget-zone-f3769", 
             appId: "1:863331658170:web:f045742523fd683e469583" 
         };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        let imagesArray = [];
+        const auth = firebase.auth();
+        const analytics = firebase.analytics();
 
-        function verifyAdmin() {
-            if(document.getElementById('adminPass').value === "shm2026") {
-                sessionStorage.setItem("admin_auth", "true");
-                document.getElementById('loginOverlay').style.display='none';
-            } else { alert("Incorrect Key!"); }
+        // Enable Offline Persistence
+        db.enablePersistence().catch(err => {
+            if (err.code == 'failed-precondition') { console.warn("Multiple tabs open"); } 
+            else if (err.code == 'unimplemented') { console.warn("Browser not supported"); }
+        });
+
+        // === 2. STATE & VARIABLES ===
+        let imagesArray = [];
+        let allOrders = []; // Store locally for filtering
+        let allProducts = [];
+
+        // === 3. AUTH LOGIC ===
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                initApp();
+                showToast("Welcome back, Admin", "success");
+            } else {
+                document.getElementById('loginOverlay').style.display = 'flex';
+            }
+        });
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const btn = document.getElementById('loginBtn');
+            const err = document.getElementById('loginError');
+
+            setLoading(btn, true);
+            err.style.display = 'none';
+
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                // Overlay closes via onAuthStateChanged
+            } catch (error) {
+                err.innerText = "Access Denied: " + error.message;
+                err.style.display = 'block';
+                setLoading(btn, false);
+            }
         }
-        if(sessionStorage.getItem("admin_auth") === "true") document.getElementById('loginOverlay').style.display='none';
+
+        async function handleLogout() {
+            await auth.signOut();
+            window.location.reload();
+        }
+
+        // === 4. APP INITIALIZATION ===
+        function initApp() {
+            loadOrders();
+            loadStock();
+            loadConfig();
+            loadLogs();
+        }
 
         function go(e, id) {
             document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -171,137 +336,351 @@
             e.currentTarget.classList.add('active');
         }
 
-        // --- MULTIPLE IMAGE HANDLING ---
-        async function handleImages(input) {
-            const files = Array.from(input.files).slice(0, 3);
-            imagesArray = []; 
-            document.getElementById('previewContainer').innerHTML = "";
-            for (let f of files) {
-                const b64 = await compress(f);
-                imagesArray.push(b64);
-                const i = document.createElement('img'); 
-                i.src = b64; i.style.width="60px"; i.style.height="60px"; i.style.borderRadius="10px"; i.style.border="2px solid red";
-                document.getElementById('previewContainer').appendChild(i);
+        // === 5. ORDERS MANAGEMENT ===
+        function loadOrders() {
+            db.collection("orders").orderBy("Date", "desc").onSnapshot(snap => {
+                allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderOrders();
+                calculateRevenue();
+            }, err => showToast("Error loading orders", "error"));
+        }
+
+        function renderOrders() {
+            const list = document.getElementById('orderList');
+            const search = document.getElementById('orderSearch').value.toLowerCase();
+            const filter = document.getElementById('statusFilter').value;
+
+            const filtered = allOrders.filter(o => {
+                const matchesSearch = (o.Customer||"").toLowerCase().includes(search) || 
+                                      (o.Mobile||"").includes(search) || 
+                                      o.id.includes(search);
+                const matchesFilter = filter === "All" || o.status === filter;
+                return matchesSearch && matchesFilter;
+            });
+
+            list.innerHTML = "";
+            let activeCount = 0;
+
+            if(filtered.length === 0) {
+                list.innerHTML = `<div style="text-align:center; padding:20px; opacity:0.5;">No orders found</div>`;
+                return;
+            }
+
+            filtered.forEach(o => {
+                if(o.status !== 'Delivered' && o.status !== 'Cancelled') activeCount++;
+                const statusColor = getStatusColor(o.status || 'Pending');
+                
+                list.innerHTML += `
+                <div class="card order-card" style="border-left-color: ${statusColor}">
+                    <div class="flex-between text-xs" style="color:var(--text-sub); margin-bottom:5px;">
+                        <span>ID: #${o.id.substring(0,6)}</span>
+                        <span>${formatDate(o.Date)}</span>
+                    </div>
+                    <div class="flex-between">
+                        <b>${o.Product}</b>
+                        <span style="color:var(--primary); font-weight:800;">৳${Number(o.Total).toLocaleString()}</span>
+                    </div>
+                    <p class="text-xs" style="margin:5px 0 10px;">${o.Customer} | <a href="tel:${o.Mobile}">${o.Mobile}</a></p>
+                    
+                    <div style="display:flex; gap:8px;">
+                        <select onchange="updateStatus('${o.id}', this.value)" class="status-select" style="flex:1;">
+                            <option value="Pending" ${o.status=='Pending'?'selected':''}>Pending</option>
+                            <option value="Shipped" ${o.status=='Shipped'?'selected':''}>Shipped</option>
+                            <option value="Delivered" ${o.status=='Delivered'?'selected':''}>Delivered</option>
+                            <option value="Cancelled" ${o.status=='Cancelled'?'selected':''}>Cancelled</option>
+                        </select>
+                        <button onclick="deleteOrder('${o.id}')" style="background:none; border:1px solid #fee2e2; color:var(--primary); width:35px; border-radius:8px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('statOrders').innerText = activeCount;
+        }
+
+        function calculateRevenue() {
+            const total = allOrders
+                .filter(o => o.status === 'Delivered')
+                .reduce((sum, o) => sum + (parseFloat(o.Total) || 0), 0);
+            document.getElementById('statRev').innerText = "৳ " + total.toLocaleString();
+        }
+
+        async function updateStatus(id, newStatus) {
+            try {
+                await db.collection("orders").doc(id).update({ status: newStatus });
+                logAction(`Order ${id.substring(0,4)} updated to ${newStatus}`);
+                showToast("Status updated", "success");
+            } catch(e) { showToast("Update failed", "error"); }
+        }
+
+        async function deleteOrder(id) {
+            if(!confirm("Permantly delete this order?")) return;
+            try {
+                await db.collection("orders").doc(id).delete();
+                showToast("Order deleted", "success");
+            } catch(e) { showToast("Delete failed", "error"); }
+        }
+
+        let debounceTimer;
+        function debounceSearch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(renderOrders, 300);
+        }
+
+        function getStatusColor(s) {
+            switch(s) {
+                case 'Delivered': return '#10b981';
+                case 'Shipped': return '#3b82f6';
+                case 'Cancelled': return '#64748b';
+                default: return '#f59e0b';
             }
         }
 
-        function compress(file) {
+        // === 6. STOCK MANAGEMENT ===
+        function loadStock() {
+            db.collection("products").onSnapshot(snap => {
+                allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderStock();
+            });
+        }
+
+        function renderStock() {
+            const list = document.getElementById('stockList');
+            const term = document.getElementById('stockSearch').value.toLowerCase();
+            list.innerHTML = "";
+            
+            allProducts.filter(p => p.title.toLowerCase().includes(term)).forEach(p => {
+                list.innerHTML += `
+                <div class="stock-item">
+                    ${p.isFlashSale ? '<div class="flash-badge"><i class="fas fa-bolt"></i> FLASH</div>' : ''}
+                    <img src="${p.image}" loading="lazy">
+                    <b class="text-xs" style="line-height:1.2; height:28px; overflow:hidden;">${p.title}</b>
+                    <div style="color:var(--primary); font-weight:800; font-size:13px; margin:5px 0;">৳${p.price}</div>
+                    <div style="display:flex; gap:5px; margin-top:auto;">
+                        <button class="submit-btn" style="padding:6px; font-size:10px;" onclick='openEditModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>EDIT</button>
+                        <button style="background:#fee2e2; color:red; border:none; padding:6px 10px; border-radius:10px;" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function filterStock() { renderStock(); }
+
+        async function deleteProduct(id) {
+            if(!confirm("Delete this product? Cannot be undone.")) return;
+            try {
+                await db.collection("products").doc(id).delete();
+                showToast("Product deleted", "success");
+            } catch(e) { showToast("Failed to delete", "error"); }
+        }
+
+        // === 7. ADD & EDIT PRODUCT ===
+        async function handleImages(input) {
+            const files = Array.from(input.files).slice(0, 3);
+            imagesArray = []; 
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = "";
+            
+            for (let f of files) {
+                if(f.size > 2000000) { showToast("Image too large (>2MB)", "error"); continue; }
+                const b64 = await compressImage(f);
+                imagesArray.push(b64);
+                const i = document.createElement('img'); 
+                i.src = b64; i.style.width="60px"; i.style.height="60px"; i.style.borderRadius="10px"; i.style.border="2px solid var(--primary)";
+                container.appendChild(i);
+            }
+        }
+
+        function compressImage(file) {
             return new Promise(res => {
                 const r = new FileReader(); r.readAsDataURL(file);
                 r.onload = e => {
                     const img = new Image(); img.src = e.target.result;
                     img.onload = () => {
-                        const c = document.createElement('canvas'); const ctx = c.getContext("2d");
-                        c.width = 500; c.height = img.height * (500/img.width);
+                        const c = document.createElement('canvas'); 
+                        const ctx = c.getContext("2d");
+                        const scale = 600 / img.width;
+                        c.width = 600; c.height = img.height * scale;
                         ctx.drawImage(img, 0, 0, c.width, c.height);
-                        res(c.toDataURL("image/jpeg", 0.7));
+                        res(c.toDataURL("image/jpeg", 0.8));
                     }
                 }
             });
         }
 
-        // --- ORDER LOGIC ---
-        db.collection("orders").orderBy("Date","desc").onSnapshot(snap => {
-            const list = document.getElementById('orderList');
-            let rev = 0, active = 0; list.innerHTML = "";
-            snap.forEach(doc => {
-                const o = doc.data(); const s = o.status || "Pending";
-                if(s === "Delivered") rev += parseInt(o.Total || 0);
-                if(s !== "Delivered" && s !== "Cancelled") active++;
+        async function publishProduct() {
+            const btn = document.getElementById('saveBtn');
+            const name = document.getElementById('pName').value;
+            const price = document.getElementById('pPrice').value;
+            
+            if(!name || !price || imagesArray.length === 0) return showToast("Name, Price & Image required!", "error");
 
-                list.innerHTML += `
-                <div class="card" style="border-left: 5px solid ${getCol(s)}">
-                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-bottom:5px;">
-                        <span>ID: ${doc.id.substring(0,6)}</span> <span>${o.Date}</span>
-                    </div>
-                    <b>${o.Product}</b> <span style="color:red; font-weight:bold;">৳${o.Total}</span>
-                    <p style="font-size:12px; margin:5px 0;">${o.Customer} | ${o.Mobile}</p>
-                    <div style="display:flex; gap:5px;">
-                        <select onchange="updateStatus('${doc.id}', this.value)" style="margin:0; padding:8px; font-size:12px; flex:1;">
-                            <option value="Pending" ${s=='Pending'?'selected':''}>Pending</option>
-                            <option value="Shipped" ${s=='Shipped'?'selected':''}>Shipped</option>
-                            <option value="Delivered" ${s=='Delivered'?'selected':''}>Delivered</option>
-                            <option value="Cancelled" ${s=='Cancelled'?'selected':''}>Cancelled</option>
-                        </select>
-                        <button onclick="delDoc('orders','${doc.id}')" style="background:#fff1f1; color:red; border:none; width:40px; border-radius:10px;"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('statRev').innerText = "৳ " + rev.toLocaleString();
-            document.getElementById('statOrders').innerText = active;
-        });
+            setLoading(btn, true);
 
-        function getCol(s) { return s==='Delivered'?'#10b981':s==='Cancelled'?'#64748b':s==='Shipped'?'#3b82f6':'#f59e0b'; }
+            try {
+                const productData = {
+                    title: name,
+                    price: Number(price),
+                    image: imagesArray[0],
+                    image2: imagesArray[1] || "",
+                    image3: imagesArray[2] || "",
+                    description: document.getElementById('pDesc').value,
+                    isFlashSale: document.getElementById('pFlash').checked,
+                    promo: {
+                        code: document.getElementById('pSecretCode').value || null,
+                        val: Number(document.getElementById('pSecretVal').value) || 0,
+                        limit: Number(document.getElementById('pSecretLimit').value) || 100,
+                        expiry: document.getElementById('pSecretExpiry').value || ""
+                    },
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
 
-        // --- STOCK LOGIC ---
-        db.collection("products").onSnapshot(snap => {
-            const list = document.getElementById('stockList');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                list.innerHTML += `
-                <div class="stock-item">
-                    ${p.isFlashSale ? '<div class="flash-badge">FLASH</div>' : ''}
-                    <img src="${p.image}">
-                    <b style="font-size:11px;">${p.title}</b>
-                    <div style="color:red; font-weight:bold; font-size:13px; margin:5px 0;">৳${p.price}</div>
-                    <div style="display:flex; gap:5px; margin-top:auto;">
-                        <button class="submit-btn" style="padding:8px; font-size:10px;" onclick="openEditModal('${doc.id}', '${p.title}', '${p.price}', \`${p.description || ''}\`, ${p.isFlashSale || false})">EDIT</button>
-                        <button style="background:#fff1f1; color:red; border:none; padding:8px; border-radius:10px;" onclick="delDoc('products','${doc.id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            });
-        });
+                await db.collection("products").add(productData);
+                showToast("Product Published!", "success");
+                
+                // Reset Form
+                document.getElementById('pName').value = "";
+                document.getElementById('pDesc').value = "";
+                imagesArray = [];
+                document.getElementById('previewContainer').innerHTML = "";
+                logAction(`Added product: ${name}`);
+            } catch(e) {
+                console.error(e);
+                showToast("Publish Failed: " + e.message, "error");
+            }
+            setLoading(btn, false);
+        }
 
-        function openEditModal(id, title, price, desc, isFlash) {
-            document.getElementById('editId').value = id;
-            document.getElementById('editTitle').value = title;
-            document.getElementById('editPrice').value = price;
-            document.getElementById('editDesc').value = desc;
-            document.getElementById('editFlash').checked = isFlash;
+        // Edit Modal Logic
+        function openEditModal(p) {
+            document.getElementById('editId').value = p.id;
+            document.getElementById('editTitle').value = p.title;
+            document.getElementById('editPrice').value = p.price;
+            document.getElementById('editDesc').value = p.description;
+            document.getElementById('editFlash').checked = p.isFlashSale;
             document.getElementById('editModal').style.display = 'flex';
         }
 
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
         async function saveProductEdit() {
-            await db.collection("products").doc(document.getElementById('editId').value).update({
-                title: document.getElementById('editTitle').value,
-                price: document.getElementById('editPrice').value,
-                description: document.getElementById('editDesc').value,
-                isFlashSale: document.getElementById('editFlash').checked
-            });
-            document.getElementById('editModal').style.display = 'none';
+            const id = document.getElementById('editId').value;
+            const btn = document.getElementById('editSaveBtn');
+            setLoading(btn, true);
+
+            try {
+                await db.collection("products").doc(id).update({
+                    title: document.getElementById('editTitle').value,
+                    price: Number(document.getElementById('editPrice').value),
+                    description: document.getElementById('editDesc').value,
+                    isFlashSale: document.getElementById('editFlash').checked
+                });
+                showToast("Product Updated", "success");
+                closeEditModal();
+                logAction(`Edited product ID: ${id}`);
+            } catch(e) { showToast("Update Failed", "error"); }
+            setLoading(btn, false);
         }
 
-        async function publish() {
-            const n = document.getElementById('pName').value, p = document.getElementById('pPrice').value;
-            if(!n || !p || imagesArray.length === 0) return alert("Missing Info!");
-            document.getElementById('saveBtn').innerText = "Publishing...";
-            await db.collection("products").add({
-                title: n, price: p, 
-                image: imagesArray[0], image2: imagesArray[1]||"", image3: imagesArray[2]||"",
-                description: document.getElementById('pDesc').value, 
-                secretCode: document.getElementById('pSecretCode').value||null,
-                secretVal: document.getElementById('pSecretVal').value||0,
-                isFlashSale: document.getElementById('pFlash').checked,
-                inStock: true, Date: Date.now()
+        // === 8. CONFIG & LOGS ===
+        function loadConfig() {
+            db.collection("settings").doc("maintenance").onSnapshot(doc => {
+                const enabled = doc.exists ? doc.data().enabled : false;
+                const btn = document.getElementById('mBtn');
+                btn.innerText = enabled ? "MODE: MAINTENANCE (OFF)" : "MODE: LIVE (ON)";
+                btn.style.background = enabled ? "var(--warning)" : "var(--success)";
+                btn.style.color = enabled ? "#000" : "#fff";
+                btn.dataset.status = enabled;
             });
-            location.reload();
         }
 
-        async function updateStatus(id, s) { await db.collection("orders").doc(id).update({ status: s }); }
-        async function delDoc(col, id) { if(confirm("Confirm Delete?")) await db.collection(col).doc(id).delete(); }
-
-        // Maintenance & Config
-        db.collection("settings").doc("maintenance").onSnapshot(doc => {
-            const s = doc.exists ? doc.data().enabled : false;
-            const btn = document.getElementById('mBtn');
-            btn.innerText = s ? "OFF" : "LIVE";
-            btn.style.background = s ? "red" : "green";
-            btn.dataset.status = s;
-        });
         async function toggleMaintenance() {
-            const cur = document.getElementById('mBtn').dataset.status === "true";
-            await db.collection("settings").doc("maintenance").set({ enabled: !cur });
+            const current = document.getElementById('mBtn').dataset.status === "true";
+            try {
+                await db.collection("settings").doc("maintenance").set({ enabled: !current }, {merge:true});
+                showToast(current ? "Store is now LIVE" : "Store is in MAINTENANCE", current ? "success" : "warning");
+                logAction(`Toggled maintenance to ${!current}`);
+            } catch(e) { showToast("Action failed", "error"); }
+        }
+
+        async function setGlobalPromo() {
+            const code = document.getElementById('promoCode').value;
+            const val = document.getElementById('promoVal').value;
+            if(!code) return showToast("Enter a code", "error");
+
+            try {
+                await db.collection("settings").doc("promo").set({
+                    code: code,
+                    value: Number(val),
+                    active: true,
+                    updatedAt: new Date()
+                });
+                showToast("Global Promo Active!", "success");
+                logAction(`Set global promo: ${code}`);
+            } catch(e) { showToast("Failed to set promo", "error"); }
+        }
+
+        // Logs
+        function logAction(msg) {
+            db.collection("admin_logs").add({
+                msg: msg,
+                user: auth.currentUser ? auth.currentUser.email : 'Unknown',
+                time: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        function loadLogs() {
+            db.collection("admin_logs").orderBy("time", "desc").limit(10).onSnapshot(snap => {
+                const div = document.getElementById('logList');
+                div.innerHTML = "";
+                snap.forEach(d => {
+                    const l = d.data();
+                    const date = l.time ? l.time.toDate().toLocaleString() : 'Just now';
+                    div.innerHTML += `<div style="padding:5px 0; border-bottom:1px solid #333;">[${date}] <b>${l.user}</b>: ${l.msg}</div>`;
+                });
+            });
+        }
+
+        // === 9. UTILITIES ===
+        function setLoading(btn, isLoading) {
+            const txt = btn.querySelector('.btn-text');
+            const spin = btn.querySelector('.spinner');
+            if(isLoading) {
+                if(txt) txt.style.display = 'none';
+                if(spin) spin.style.display = 'block';
+                btn.disabled = true;
+            } else {
+                if(txt) txt.style.display = 'block';
+                if(spin) spin.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function showToast(msg, type='success') {
+            const box = document.getElementById('toastBox');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = type === 'success' ? `<i class="fas fa-check-circle"></i> ${msg}` : `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+            box.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        function formatDate(str) {
+            // Handles both Firestore Timestamp and string dates
+            if(!str) return "";
+            if(str.seconds) return new Date(str.seconds * 1000).toLocaleDateString();
+            return str;
+        }
+
+        function exportCSV() {
+            let csv = "ID,Date,Product,Customer,Mobile,Total,Status\n";
+            allOrders.forEach(o => {
+                csv += `${o.id},"${o.Date}","${o.Product}","${o.Customer}","${o.Mobile}",${o.Total},${o.Status}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
         }
     </script>
 </body>
