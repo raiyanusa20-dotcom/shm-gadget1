@@ -405,6 +405,676 @@
             isLoading: true
         };
 
+        // --- 2. SEO HELPER ---
+        function updateMeta(title, desc, image) {
+            document.title = title ? `${title} | SHM Gadget Zone` : "SHM GADGET ZONE | Premium Tech Store";
+            let metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute("content", desc || "Buy authentic smartwatches and gadgets in Bangladesh.");
+        }
+
+        // --- 3. CORE FUNCTIONS ---
+        function initApp() {
+            db.collection("settings").doc("maintenance").onSnapshot((doc) => {
+                const isMaintenance = doc.exists && doc.data().enabled;
+                document.getElementById('maintenance').style.display = isMaintenance ? 'flex' : 'none';
+            });
+
+            db.collection("categories").onSnapshot((snap) => {
+                appState.categories = [];
+                const cont = document.getElementById('catContainer');
+                cont.innerHTML = '<button class="cat-pill active" onclick="filterCategory(\'All\', this)">All Products</button>';
+                snap.forEach(doc => {
+                    const name = doc.data().name;
+                    appState.categories.push(name);
+                    cont.innerHTML += `<button class="cat-pill" onclick="filterCategory('${name}', this)">${name}</button>`;
+                });
+            });
+
+            db.collection("products").onSnapshot((snap) => {
+                appState.products = [];
+                snap.forEach(doc => {
+                    let p = doc.data();
+                    p.id = doc.id;
+                    appState.products.push(p);
+                });
+                
+                appState.isLoading = false;
+                document.getElementById('loader').classList.add('hidden');
+                
+                updateJsonLd();
+                renderFlashSale();
+                applyFilters();
+
+                // DEEP LINK CHECK
+                const urlParams = new URLSearchParams(window.location.search);
+                const productId = urlParams.get('product');
+                if (productId) {
+                    openDetail(productId, false); 
+                }
+            }, (error) => {
+                console.error("Data Load Error:", error);
+                showToast("Connection Error. Refresh Page.", "error");
+            });
+        }
+
+        function updateJsonLd() {
+            const schema = {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "itemListElement": appState.products.slice(0, 10).map((p, index) => ({
+                    "@type": "ListItem",
+                    "position": index + 1,
+                    "item": {
+                        "@type": "Product",
+                        "name": p.title,
+                        "image": p.image,
+                        "description": p.description ? p.description.substring(0, 100) : p.title,
+                        "offers": { "@type": "Offer", "priceCurrency": "BDT", "price": p.price, "availability": p.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }
+                    }
+                }))
+            };
+            document.getElementById('json-ld-products').textContent = JSON.stringify(schema);
+        }
+
+        // --- 4. RENDERING & FILTERING ---
+        function handleSearch(q) {
+            appState.searchQuery = q.toLowerCase();
+            appState.page = 1;
+            applyFilters();
+        }
+
+        function filterCategory(cat, btn) {
+            appState.currentCategory = cat;
+            appState.page = 1;
+            document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let res = appState.products;
+            if (appState.currentCategory !== 'All') res = res.filter(p => p.category === appState.currentCategory);
+            if (appState.searchQuery) res = res.filter(p => p.title.toLowerCase().includes(appState.searchQuery));
+            appState.filtered = res;
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('productGrid');
+            const start = (appState.page - 1) * appState.perPage;
+            const end = start + appState.perPage;
+            const pageItems = appState.filtered.slice(start, end);
+            const totalPages = Math.ceil(appState.filtered.length / appState.perPage);
+
+            if(pageItems.length === 0) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px; color:#888;"><i class="fas fa-box-open" style="font-size:40px; margin-bottom:10px;"></i><p>No products found.</p></div>`;
+            } else {
+                grid.innerHTML = pageItems.map(p => `
+                    <div class="prod-card">
+                        ${!p.inStock ? '<div class="badge badge-out">OUT OF STOCK</div>' : '<div class="badge badge-hot">HOT</div>'}
+                        <img src="${p.image}" class="prod-img ${!p.inStock ? 'grayscale' : ''}" onclick="openDetail('${p.id}')" onerror="this.src='https://via.placeholder.com/150'" loading="lazy" alt="${p.title}">
+                        <div class="prod-info">
+                            <div class="prod-title">${p.title}</div>
+                            <div class="prod-price">৳${p.price}</div>
+                            <button class="btn-main" ${!p.inStock ? 'disabled' : ''} onclick="openCheckout('${p.id}')">${!p.inStock ? 'UNAVAILABLE' : 'ORDER NOW'}</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('pageIndicator').innerText = `Page ${appState.page} of ${totalPages || 1}`;
+            document.getElementById('prevBtn').disabled = appState.page === 1;
+            document.getElementById('nextBtn').disabled = appState.page >= totalPages || totalPages === 0;
+        }
+
+        function renderFlashSale() {
+            const flashItems = appState.products.filter(p => p.isFlashSale === true);
+            const container = document.getElementById('flashContainer');
+            if(flashItems.length === 0) { document.getElementById('flashSection').style.display = 'none'; return; }
+            document.getElementById('flashSection').style.display = 'block';
+            container.innerHTML = flashItems.map(p => `
+                <div class="flash-card" onclick="openDetail('${p.id}')">
+                    <img src="${p.image}" onerror="this.src='https://via.placeholder.com/100'" loading="lazy">
+                    <div style="font-size:12px; height:32px; overflow:hidden; font-weight:600;">${p.title}</div>
+                    <div class="flash-price">৳${p.price}</div>
+                </div>
+            `).join('');
+            setInterval(() => { if(container.scrollLeft + container.offsetWidth >= container.scrollWidth) container.scrollTo({left:0, behavior:'smooth'}); else container.scrollBy({left: 150, behavior:'smooth'}); }, 3000);
+        }
+
+        function changePage(dir) {
+            appState.page += dir;
+            renderGrid();
+            document.getElementById('productGrid').scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+
+        // --- 5. DETAILS & MODALS (UPDATED) ---
+        function openDetail(id, pushHistory = true) {
+            const p = appState.products.find(x => x.id === id);
+            if(!p) return;
+
+            // URL & SEO UPDATE
+            if (pushHistory) {
+                const newUrl = `${window.location.pathname}?product=${id}`;
+                window.history.pushState({modal: id}, p.title, newUrl);
+            }
+            updateMeta(p.title, p.description ? p.description.substring(0, 150) : p.title, p.image);
+
+            document.getElementById('dTitle').innerText = p.title;
+            document.getElementById('dPrice').innerText = "৳ " + p.price;
+            document.getElementById('dDesc').innerText = p.description || "No description available.";
+            document.getElementById('dStock').innerText = p.inStock ? "In Stock" : "Stock Out";
+            document.getElementById('dStock').style.color = p.inStock ? "var(--green)" : "red";
+            document.getElementById('dBrand').innerText = p.brand || "General";
+            
+            const slider = document.getElementById('detailSlides');
+            let imgs = [p.image];
+            if(p.image2) imgs.push(p.image2);
+            if(p.image3) imgs.push(p.image3);
+            slider.innerHTML = imgs.map(src => `<img src="${src}" onerror="this.src='https://via.placeholder.com/300'">`).join('');
+            
+            const buyBtn = document.getElementById('dBuyBtn');
+            buyBtn.onclick = () => { closeModal('detailModal'); openCheckout(p.id); };
+            buyBtn.disabled = !p.inStock;
+            buyBtn.innerText = p.inStock ? "BUY NOW" : "OUT OF STOCK";
+            
+            document.getElementById('dWaBtn').onclick = () => {
+                const msg = `Hi, I want to know more about: ${p.title} (Price: ${p.price})`;
+                window.open(`https://api.whatsapp.com/send?phone=8801313607293&text=${encodeURIComponent(msg)}`, '_blank');
+            };
+            openModal('detailModal');
+        }
+
+        function slide(dir) {
+            const c = document.getElementById('detailSlides');
+            c.scrollBy({left: c.clientWidth * dir, behavior: 'smooth'});
+        }
+
+        // --- 6. CHECKOUT LOGIC ---
+        function openCheckout(id) {
+            const p = appState.products.find(x => x.id === id);
+            if(!p || !p.inStock) return;
+            appState.cartItem = p;
+            appState.discount = 0;
+            appState.deliveryCharge = 80;
+            document.getElementById('promoCode').value = '';
+            document.querySelector('input[name="delivery"][value="80"]').checked = true;
+            updateCartTotal();
+            openModal('checkoutModal');
+        }
+
+        function updateCartTotal() {
+            const radios = document.getElementsByName('delivery');
+            for(let r of radios) { if(r.checked) appState.deliveryCharge = parseInt(r.value); }
+            const basePrice = parseInt(appState.cartItem.price);
+            const total = (basePrice + appState.deliveryCharge) - appState.discount;
+            document.getElementById('sPrice').innerText = "৳ " + basePrice;
+            document.getElementById('sDel').innerText = "৳ " + appState.deliveryCharge;
+            document.getElementById('sDisc').innerText = "-৳ " + appState.discount;
+            document.getElementById('sTotal').innerText = "৳ " + Math.max(0, total);
+        }
+
+        async function applyPromo() {
+            const code = document.getElementById('promoCode').value.trim();
+            if(!code) return showToast("Enter a code", "error");
+            try {
+                const snap = await db.collection("promos").where("code", "==", code).get();
+                if(snap.empty) { appState.discount = 0; showToast("Invalid Coupon", "error"); }
+                else { appState.discount = parseInt(snap.docs[0].data().val); showToast("Coupon Applied!", "success"); }
+                updateCartTotal();
+            } catch(e) { console.error(e); }
+        }
+
+        async function placeOrder() {
+            const name = document.getElementById('cName').value.trim();
+            const phone = document.getElementById('cPhone').value.trim();
+            const addr = document.getElementById('cAddr').value.trim();
+            if(!name || phone.length !== 11 || !addr) return showToast("Please fill all details correctly.", "error");
+
+            const btn = document.getElementById('confirmBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const finalTotal = (parseInt(appState.cartItem.price) + appState.deliveryCharge) - appState.discount;
+            try {
+                const orderData = { customer: name, phone: phone, address: addr, product: appState.cartItem.title, price: appState.cartItem.price, total: finalTotal, date: new Date().toISOString(), status: "Pending" };
+                const ref = await db.collection("orders").add(orderData);
+                closeModal('checkoutModal');
+                showToast("Order Placed Successfully!", "success");
+                setTimeout(() => {
+                    const waMsg = `*New Order Placed!* %0AID: ${ref.id.substring(0,6).toUpperCase()} %0AItem: ${appState.cartItem.title} %0ATotal: ${finalTotal} Tk %0A%0APlease confirm my order.`;
+                    if(confirm("Order Saved! Do you want to send confirmation via WhatsApp?")) window.open(`https://api.whatsapp.com/send?phone=8801313607293&text=${waMsg}`, '_blank');
+                }, 1000);
+            } catch(e) { showToast("Order Failed. Try again.", "error"); } finally { btn.innerHTML = "CONFIRM ORDER"; btn.disabled = false; }
+        }
+
+        // --- 7. UTILS & TRACKING ---
+        async function trackOrder() {
+            const ph = document.getElementById('trackInput').value.trim();
+            const btn = document.getElementById('trackSearchBtn');
+            const resDiv = document.getElementById('trackResult');
+
+            if(ph.length < 11) return showToast("Enter valid 11-digit number", "error");
+            
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> SEARCHING...';
+            btn.disabled = true;
+            resDiv.style.display = 'none';
+
+            try {
+                const snap = await db.collection("orders").where("phone", "==", ph).limit(1).get();
+                
+                resDiv.style.display = 'block';
+                if(snap.empty) { 
+                    resDiv.innerHTML = "<div style='color:var(--red); text-align:center; font-weight:600;'>No order found with this phone number.</div>"; 
+                } else { 
+                    const data = snap.docs[0].data();
+                    const dateStr = data.date ? new Date(data.date).toLocaleDateString() : 'Recent';
+                    resDiv.innerHTML = `
+                        <div style="font-weight:700; font-size:15px; margin-bottom:5px;">${data.product}</div>
+                        <div style="font-size:14px; margin-bottom:5px;">Customer: ${data.customer}</div>
+                        <div style="font-size:14px;">Status: <span style="color:var(--green); font-weight:800; text-transform:uppercase; background:rgba(37,211,102,0.1); padding:2px 8px; border-radius:4px;">${data.status}</span></div>
+                        <div style="font-size:11px; color:#888; margin-top:8px; border-top:1px solid var(--border); padding-top:5px;">Order Date: ${dateStr}</div>
+                    `;
+                }
+            } catch(e) { 
+                console.error(e); 
+                showToast("System Error. Try again.", "error");
+            } finally {
+                btn.innerHTML = "SEARCH RECORD";
+                btn.disabled = false;
+            }
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.style.background = type === 'error' ? 'var(--red)' : '#333';
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function toggleTheme() {
+            const curr = document.documentElement.getAttribute('data-theme');
+            const target = curr === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            localStorage.setItem('theme', target);
+            document.getElementById('themeBtn').innerHTML = target === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        
+        // UPDATED: Handle Back button and URL reset
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none';
+            if(id === 'detailModal') {
+                if(window.location.search.includes('product=')) {
+                    // Reset URL to clean state
+                    const cleanUrl = window.location.pathname;
+                    window.history.pushState(null, "SHM Gadget Zone", cleanUrl);
+                }
+                updateMeta(null, null); // Reset Meta
+            }
+        }
+
+        // BROWSER BACK BUTTON HANDLER
+        window.onpopstate = function(event) {
+            if (event.state && event.state.modal) {
+                openDetail(event.state.modal, false);
+            } else {
+                document.getElementById('detailModal').style.display = 'none';
+                updateMeta(null, null);
+            }
+        };
+        
+        const fomoNames = ["Rahim from Dhaka", "Suma from Sylhet", "Tanvir from CTG", "Nila from Savar", "Karim from Rajshahi"];
+        function startFomo() {
+            setInterval(() => {
+                if(appState.products.length === 0) return;
+                const rProd = appState.products[Math.floor(Math.random() * appState.products.length)];
+                const rName = fomoNames[Math.floor(Math.random() * fomoNames.length)];
+                document.getElementById('fomo-img').src = rProd.image;
+                document.getElementById('fomo-user').innerText = rName;
+                document.getElementById('fomo-action').innerText = "Ordered " + rProd.title.substring(0, 15) + "...";
+                const f = document.getElementById('fomo');
+                f.classList.add('visible');
+                setTimeout(() => f.classList.remove('visible'), 4000);
+            }, 20000);
+        }
+
+        function startFlashTimer() {
+            setInterval(() => {
+                const now = new Date();
+                const end = new Date();
+                end.setHours(23, 59, 59);
+                const diff = end - now;
+                if (diff < 0) { document.getElementById('flashTimer').innerText = "ENDED"; return; }
+                const h = String(Math.floor((diff / (1000 * 60 * 60)) % 24)).padStart(2, '0');
+                const m = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
+                const s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+                document.getElementById('flashTimer').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        // --- 8. HIDDEN SITEMAP GENERATOR ---
+        function generateSitemap() {
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+    <url>
+        <loc>https://raiyanusa20-dotcom.github.io/shm-gadget1/</loc>
+        <priority>1.0</priority>
+        <changefreq>daily</changefreq>
+    </url>`;
+
+            appState.products.forEach(p => {
+                const loc = `https://raiyanusa20-dotcom.github.io/shm-gadget1/?product=${p.id}`;
+                const title = p.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                let imageStr = `<image:image><image:loc>${p.image}</image:loc><image:title>${title}</image:title></image:image>`;
+                if(p.image2) imageStr += `<image:image><image:loc>${p.image2}</image:loc></image:image>`;
+                if(p.image3) imageStr += `<image:image><image:loc>${p.image3}</image:loc></image:image>`;
+
+                xml += `<url><loc>${loc}</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><priority>0.8</priority>${imageStr}</url>`;
+            });
+            xml += `</urlset>`;
+
+            const blob = new Blob([xml], { type: "text/xml" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "sitemap.xml";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        window.addEventListener('load', () => { initApp(); startFlashTimer(); startFomo(); if(localStorage.getItem('theme') === 'dark') toggleTheme(); });
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }
+    </script>
+</body>
+</html>
+        
+        .prod-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; position: relative; display: flex; flex-direction: column; transition: transform 0.2s; box-shadow: var(--shadow); }
+        .prod-card:active { transform: scale(0.98); }
+        
+        .badge { position: absolute; top: 10px; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; text-transform: uppercase; z-index: 2; letter-spacing: 0.5px; }
+        .badge-hot { right: 10px; background: var(--red); color: white; box-shadow: 0 2px 5px rgba(230, 57, 70, 0.4); animation: pulse 2s infinite; }
+        .badge-out { left: 10px; background: #333; color: white; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .prod-img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 12px; cursor: pointer; }
+        .grayscale { filter: grayscale(1); opacity: 0.6; }
+        
+        .prod-info { flex: 1; display: flex; flex-direction: column; }
+        .prod-title { font-size: 13px; line-height: 1.4; height: 38px; overflow: hidden; margin-bottom: 8px; font-weight: 500; color: var(--text); }
+        .prod-price { font-size: 17px; font-weight: 700; color: var(--red); margin-bottom: 12px; }
+        
+        .btn-main { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; background: var(--red); color: white; letter-spacing: 0.5px; }
+        .btn-main:disabled { background: var(--border); color: #999; cursor: not-allowed; }
+
+        /* PAGINATION */
+        .pagination { display: flex; justify-content: center; gap: 15px; padding: 40px 10px; align-items: center; }
+        .page-btn { padding: 10px 25px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; cursor: pointer; color: var(--text); font-weight: 600; transition: 0.2s; }
+        .page-btn:active { transform: scale(0.95); }
+        .page-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+        /* SEO SECTION */
+        .seo-box { background: var(--card); padding: 50px 20px; border-top: 4px solid var(--red); margin-top: 30px; }
+        .seo-title { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 25px; text-transform: uppercase; line-height: 1.2; letter-spacing: -1px; }
+        .seo-text { font-size: 14px; line-height: 1.8; opacity: 0.8; color: var(--text); }
+        @media(min-width: 768px) { .seo-text { column-count: 2; gap: 50px; } }
+        .tag { color: var(--red); font-weight: 700; }
+
+        /* FOOTER */
+        footer { background: #111; color: #ccc; padding: 60px 20px 30px; text-align: left; font-size: 13px; margin-top: 50px; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto 40px; }
+        .f-col h4 { color: white; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px; }
+        .f-col a { display: block; color: #888; text-decoration: none; margin-bottom: 10px; transition: 0.3s; }
+        .f-col a:hover { color: var(--red); padding-left: 5px; }
+        .copyright { border-top: 1px solid #222; padding-top: 25px; text-align: center; color: #666; font-size: 12px; }
+
+        /* MODALS */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card); width: 92%; max-width: 450px; border-radius: 20px; padding: 25px; position: relative; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        @keyframes slideUp { from{transform:translateY(50px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+        
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text); z-index: 10; }
+        
+        /* FORM INPUTS */
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; font-size: 14px; }
+        .form-input:focus { border-color: var(--text); }
+        
+        .promo-box { display: flex; gap: 10px; margin: 20px 0; }
+        .promo-btn { background: var(--dark); color: white; border: none; padding: 0 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: var(--text); }
+        .total-row { display: flex; justify-content: space-between; margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px; font-weight: 800; font-size: 20px; color: var(--red); }
+
+        /* DETAIL VIEW SLIDER */
+        .slider-wrapper { position: relative; width: 100%; height: 320px; margin-bottom: 20px; background: white; border-radius: 15px; overflow: hidden; border: 1px solid var(--border); }
+        .slides { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .slides img { min-width: 100%; height: 100%; object-fit: contain; scroll-snap-align: center; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.1); color: var(--dark); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); transition: 0.2s; }
+        .nav-btn:hover { background: rgba(0,0,0,0.2); }
+        .prev { left: 10px; } .next { right: 10px; }
+
+        /* TOASTS */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #333; color: white; padding: 12px 30px; border-radius: 50px; z-index: 5000; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        
+        #fomo { position: fixed; bottom: 90px; left: 15px; background: var(--card); border: 1px solid var(--border); padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); z-index: 1000; max-width: 300px; transform: translateY(100px); opacity: 0; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        #fomo.visible { transform: translateY(0); opacity: 1; }
+
+        /* MAINTENANCE */
+        #maintenance { position: fixed; inset: 0; background: #fff; z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="maintenance">
+        <i class="fas fa-tools" style="font-size: 60px; color: var(--red); margin-bottom: 20px;"></i>
+        <h1>System Upgrade</h1>
+        <p>We are improving our servers. Please check back in 1 hour.</p>
+    </div>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; font-weight:600; font-size:14px; color:#555;">Loading Store...</p>
+    </div>
+
+    <div id="toast"><i class="fas fa-info-circle"></i> <span id="toast-msg"></span></div>
+    
+    <div id="fomo">
+        <img id="fomo-img" src="" style="width:45px; height:45px; border-radius:8px; object-fit:cover;">
+        <div style="font-size:12px; color:var(--text); line-height: 1.3;">
+            <div style="font-weight:700;" id="fomo-user"></div>
+            <div id="fomo-action" style="opacity:0.8;"></div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <a href="#" class="logo" onclick="location.reload()">
+                <img src="https://i.ibb.co.com/fd0vscq9/FB-IMG-1767802259536.jpg" alt="Logo">
+                SHM GADGET
+            </a>
+            <div class="header-tools">
+                <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
+                <button class="track-btn" onclick="openModal('trackModal')">TRACK</button>
+            </div>
+        </div>
+        <div class="search-container">
+            <input type="text" class="search-bar" id="searchInput" placeholder="Search gadgets, watches, audio..." onkeyup="handleSearch(this.value)">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+    </header>
+
+    <div style="margin-top: 10px;">
+        <div class="cat-bar" id="catContainer">
+            <button class="cat-pill active" onclick="filterCategory('All', this)">All Products</button>
+        </div>
+    </div>
+
+    <div class="flash-sale" id="flashSection" style="display:none;">
+        <div class="section-header">
+            <div class="section-title"><i class="fas fa-bolt"></i> FLASH DEALS</div>
+            <div class="timer-badge" id="flashTimer">00:00:00</div>
+        </div>
+        <div class="h-scroll" id="flashContainer"></div>
+    </div>
+
+    <div class="grid-container" id="productGrid"></div>
+
+    <div class="pagination" id="pagination">
+        <button class="page-btn" onclick="changePage(-1)" id="prevBtn">Previous</button>
+        <span id="pageIndicator" style="font-size:14px; font-weight:600;">Page 1</span>
+        <button class="page-btn" onclick="changePage(1)" id="nextBtn">Next</button>
+    </div>
+
+    <section class="seo-box">
+        <h1 class="seo-title">Best Gadget Shop in Bangladesh</h1>
+        <div class="seo-text">
+            <p>Welcome to <strong>SHM Gadget Zone</strong>, the most trusted destination for <span class="tag">original smartwatches in BD</span>. We provide the latest tech gear, including <span class="tag">Kieslect, Amazfit, Huawei</span>, and premium <span class="tag">ANC earbuds</span>. Our goal is to ensure you get 100% authentic products with official warranty.</p>
+            <p>Looking for the <span class="tag">best smartwatch price in Bangladesh 2026</span>? We offer competitive pricing, fast <span class="tag">home delivery</span>, and a seamless shopping experience. Whether you need <span class="tag">gaming headphones</span> or <span class="tag">waterproof fitness trackers</span>, our catalog is updated daily.</p>
+        </div>
+        <a href="https://www.facebook.com/share/1GL5qrTuqU/" target="_blank" style="display:inline-flex; align-items:center; gap:8px; margin-top:25px; color:#1877F2; text-decoration:none; font-weight:700; font-size:14px;"><i class="fab fa-facebook-f"></i> Visit Official Facebook Page</a>
+    </section>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('detailModal')">&times;</span>
+            <div class="slider-wrapper">
+                <div class="slides" id="detailSlides"></div>
+                <button class="nav-btn prev" onclick="slide(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="nav-btn next" onclick="slide(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <h2 id="dTitle" style="font-size:18px; margin-bottom:5px; line-height:1.4;"></h2>
+            <div id="dPrice" style="color:var(--red); font-weight:800; font-size:22px; margin-bottom:12px;"></div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:20px; font-size:12px;">
+                <span id="dStock" style="background:var(--bg); padding:6px 12px; border-radius:6px; border:1px solid var(--border); font-weight:600;"></span>
+                <span id="dBrand" style="background:var(--bg); padding:6px 12px; border-radius:6px; border:1px solid var(--border); font-weight:600;"></span>
+            </div>
+
+            <p id="dDesc" style="font-size:14px; color:var(--text); opacity:0.8; line-height:1.6; margin-bottom:25px; white-space: pre-wrap;"></p>
+
+            <button class="btn-main" id="dBuyBtn" style="height:50px; font-size:14px; margin-bottom:12px;">BUY NOW</button>
+            <button class="btn-main" id="dWaBtn" style="height:50px; background:var(--green); display:flex; align-items:center; justify-content:center; gap:8px;">
+                <i class="fab fa-whatsapp" style="font-size:18px;"></i> ORDER VIA WHATSAPP
+            </button>
+        </div>
+    </div>
+
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('checkoutModal')">&times;</span>
+            <h3 style="margin-bottom:20px;">Secure Checkout</h3>
+            
+            <div class="form-group">
+                <input type="text" id="cName" class="form-input" placeholder="Full Recipient Name">
+            </div>
+            <div class="form-group">
+                <input type="tel" id="cPhone" class="form-input" placeholder="Phone Number (11 digits)" maxlength="11">
+            </div>
+            <div class="form-group">
+                <textarea id="cAddr" class="form-input" placeholder="Full Delivery Address" rows="2"></textarea>
+            </div>
+
+            <div style="margin: 20px 0; background:var(--bg); padding:15px; border-radius:10px;">
+                <p style="font-size:13px; font-weight:700; margin-bottom:10px; text-transform:uppercase; color:#888;">Delivery Area</p>
+                <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:14px; cursor:pointer;">
+                    <input type="radio" name="delivery" value="80" checked onchange="updateCartTotal()"> Inside Dhaka (৳80)
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer;">
+                    <input type="radio" name="delivery" value="150" onchange="updateCartTotal()"> Outside Dhaka (৳150)
+                </label>
+            </div>
+
+            <div class="promo-box">
+                <input type="text" id="promoCode" class="form-input" placeholder="Promo Code">
+                <button class="promo-btn" onclick="applyPromo()">APPLY</button>
+            </div>
+
+            <div style="border:1px solid var(--border); padding:15px; border-radius:12px; margin-top:10px;">
+                <div class="summary-row"><span>Product Price</span><span id="sPrice" style="font-weight:600;">৳0</span></div>
+                <div class="summary-row"><span>Delivery Fee</span><span id="sDel" style="font-weight:600;">৳80</span></div>
+                <div class="summary-row" style="color:var(--green);"><span>Discount</span><span id="sDisc" style="font-weight:600;">-৳0</span></div>
+                <div class="total-row"><span>Total Payable</span><span id="sTotal">৳0</span></div>
+            </div>
+
+            <button class="btn-main" onclick="placeOrder()" id="confirmBtn" style="margin-top:25px; height:55px; font-size:16px;">CONFIRM ORDER</button>
+        </div>
+    </div>
+
+    <div id="trackModal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <span class="close-modal" onclick="closeModal('trackModal')">&times;</span>
+            <h3 style="margin-bottom:10px;">Track Order</h3>
+            <p style="font-size:13px; color:#888; margin-bottom:20px;">Enter the phone number used during checkout.</p>
+            <input type="number" id="trackInput" class="form-input" placeholder="01XXXXXXXXX">
+            <button class="btn-main" id="trackSearchBtn" onclick="trackOrder()" style="margin-top:15px; height:45px;">SEARCH RECORD</button>
+            
+            <div id="trackResult" style="margin-top:20px; display:none; padding:15px; background:var(--bg); border-radius:10px; text-align:left; border:1px solid var(--border);">
+                <div style="font-weight:700; margin-bottom:5px;" id="trName"></div>
+                <div style="font-size:14px;">Status: <span id="trStatus" style="color:var(--green); font-weight:800; text-transform:uppercase;"></span></div>
+                <div style="font-size:12px; color:#666; margin-top:5px;" id="trDate"></div>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://api.whatsapp.com/send?phone=8801313607293" target="_blank" style="position:fixed; bottom:25px; right:25px; background:var(--green); width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:32px; box-shadow:0 10px 25px rgba(37, 211, 102, 0.4); z-index:1500; text-decoration:none; transition:transform 0.3s;">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="f-col">
+                <h4>SHM GADGET ZONE</h4>
+                <p>Your premium tech partner in Bangladesh. We import and sell authentic smartwatches, earbuds, and lifestyle gadgets.</p>
+            </div>
+            <div class="f-col">
+                <h4>Customer Service</h4>
+                <a href="#">Warranty Policy</a>
+                <a href="#">Delivery Information</a>
+                <a href="#">Returns & Refund</a>
+            </div>
+            <div class="f-col">
+                <h4>Quick Links</h4>
+                <a href="#">Smartwatches</a>
+                <a href="#">Earbuds</a>
+                <a href="#">Chargers</a>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2026 SHM Gadget Zone. All Rights Reserved.
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. CONFIGURATION & STATE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjb15aH65juySeyZUA4yTPrLx7HosP1Cs",
+            authDomain: "shm-gadget-zone-f3769.firebaseapp.com",
+            projectId: "shm-gadget-zone-f3769",
+            appId: "1:863331658170:web:f045742523fd683e469583"
+        };
+        
+        try { firebase.initializeApp(firebaseConfig); } catch(e) { console.error("Firebase Init Error:", e); }
+        const db = firebase.firestore();
+
+        const appState = {
+            products: [],
+            filtered: [],
+            categories: [],
+            page: 1,
+            perPage: 12,
+            currentCategory: 'All',
+            searchQuery: '',
+            cartItem: null, 
+            discount: 0,
+            deliveryCharge: 80,
+            isLoading: true
+        };
+
         // --- 2. CORE FUNCTIONS ---
         function initApp() {
             db.collection("settings").doc("maintenance").onSnapshot((doc) => {
