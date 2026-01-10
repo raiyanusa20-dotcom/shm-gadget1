@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHM COMMAND CENTER v3.0 PRO</title>
+    <title>SHM COMMAND CENTER v3.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 
     <style>
         :root {
-            --primary: #ef4444; /* Red-500 */
+            --primary: #ef4444; 
             --primary-hover: #dc2626;
             --dark: #0f172a;
             --bg: #f8fafc;
@@ -25,35 +24,22 @@
             --warning: #f59e0b;
         }
 
-        /* Dark Mode Support via class */
-        body.dark-mode {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --dark: #f8fafc;
-            --border: #334155;
-            --text-sub: #94a3b8;
-        }
-
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; transition: background 0.2s, color 0.2s; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
 
-        /* HEADER */
         header { background: #111; color: white; padding: 25px 20px 60px; text-align: center; border-radius: 0 0 30px 30px; border-bottom: 4px solid var(--primary); position: relative; }
         .logout-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 
-        /* STATS */
         .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: -40px 15px 20px; position: relative; z-index: 10; }
         .stat-card { background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border); }
         .stat-card small { font-size: 10px; color: var(--text-sub); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .stat-card h3 { color: var(--dark); font-size: 20px; margin-top: 5px; font-weight: 800; }
 
-        /* NAVIGATION */
         .nav { display: flex; background: var(--card); margin: 0 15px 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; position: sticky; top: 15px; z-index: 90; border: 1px solid var(--border); scrollbar-width: none; }
         .nav::-webkit-scrollbar { display: none; }
         .tab { flex: 1; min-width: 90px; padding: 14px; border: none; background: none; font-weight: 700; font-size: 11px; color: var(--text-sub); cursor: pointer; white-space: nowrap; }
         .tab.active { color: var(--primary); background: rgba(239, 68, 68, 0.05); border-bottom: 3px solid var(--primary); }
 
-        /* LAYOUT & UTILS */
         .container { padding: 0 15px; max-width: 800px; margin: auto; }
         .page { display: none; }
         .page.active { display: block; animation: slideUp 0.3s ease-out; }
@@ -62,9 +48,7 @@
         .card { background: var(--card); padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .text-xs { font-size: 11px; }
-        .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 
-        /* INPUTS */
         .input-group { margin-bottom: 12px; }
         input, textarea, select { width: 100%; padding: 14px; background: var(--bg); border: 1.5px solid var(--border); color: var(--dark); border-radius: 12px; outline: none; font-size: 14px; }
         input:focus, textarea:focus { border-color: var(--primary); }
@@ -72,33 +56,28 @@
         .submit-btn:hover { background: var(--primary-hover); }
         .submit-btn:disabled { background: var(--text-sub); opacity: 0.7; cursor: not-allowed; }
 
-        /* ORDERS */
         .filters { display: flex; gap: 8px; margin-bottom: 15px; }
         .order-card { border-left: 4px solid var(--border); position: relative; }
         .status-select { padding: 6px 10px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
 
-        /* STOCK GRID */
         .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
         .stock-item { background: var(--card); padding: 10px; border-radius: 15px; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .stock-item img { width: 100%; height: 120px; object-fit: contain; border-radius: 10px; background: #f1f5f9; margin-bottom: 8px; }
         .flash-badge { position: absolute; top: 8px; left: 8px; background: var(--primary); color: white; font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 20px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .out-badge { position: absolute; top: 8px; right: 8px; background: #333; color: white; font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 20px; z-index: 2; }
 
-        /* LOGIN OVERLAY */
         #loginOverlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 40px; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; }
 
-        /* TOAST & LOADERS */
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 400px; }
         .toast { background: #333; color: #fff; padding: 12px 20px; border-radius: 50px; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); opacity: 0; animation: toastUp 0.3s forwards; pointer-events: all; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .toast.success { background: #059669; }
         .toast.error { background: #dc2626; }
         @keyframes toastUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* MODAL */
         #editModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
         .edit-box { background:var(--card); width:92%; max-width:500px; border-radius:24px; padding:25px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         
-        /* SPINNER */
         .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; display: none; margin: 0 auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -125,7 +104,7 @@
     <header>
         <button class="logout-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         <h2>SHM COMMAND</h2>
-        <p style="font-size:11px; opacity:0.7;">v3.0 PRO • Realtime Connection</p>
+        <p style="font-size:11px; opacity:0.7;">v3.1 • Realtime Connection</p>
     </header>
 
     <div class="stats-row">
@@ -180,9 +159,15 @@
                 </button>
                 <input type="file" id="file" hidden multiple accept="image/*" onchange="handleImages(this)">
                 
-                <div class="flex-between" style="background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3; margin-bottom:15px;">
-                    <span style="font-size:12px; font-weight:800; color:var(--primary);">⚡ FLASH SALE ITEM</span>
-                    <input type="checkbox" id="pFlash" style="width:20px; height:20px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div class="flex-between" style="background: #ecfccb; padding: 12px; border-radius: 12px; border: 1px solid #bef264;">
+                        <span style="font-size:12px; font-weight:800; color:#365314;">IN STOCK</span>
+                        <input type="checkbox" id="pStock" checked style="width:20px; height:20px; accent-color:#4d7c0f;">
+                    </div>
+                    <div class="flex-between" style="background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3;">
+                        <span style="font-size:12px; font-weight:800; color:var(--primary);">FLASH SALE</span>
+                        <input type="checkbox" id="pFlash" style="width:20px; height:20px;">
+                    </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
@@ -247,9 +232,15 @@
             </div>
             <input type="hidden" id="editId">
             
-            <div class="flex-between" style="background: #fff1f2; padding: 10px; border-radius: 10px; margin-bottom:12px;">
-                <span style="font-size:12px; font-weight:800; color:var(--primary);">⚡ FLASH SALE</span>
-                <input type="checkbox" id="editFlash" style="width:20px; height:20px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div class="flex-between" style="background: #ecfccb; padding: 10px; border-radius: 10px;">
+                    <span style="font-size:12px; font-weight:800; color:#365314;">IN STOCK</span>
+                    <input type="checkbox" id="editStock" style="width:20px; height:20px; accent-color:#4d7c0f;">
+                </div>
+                <div class="flex-between" style="background: #fff1f2; padding: 10px; border-radius: 10px;">
+                    <span style="font-size:12px; font-weight:800; color:var(--primary);">FLASH SALE</span>
+                    <input type="checkbox" id="editFlash" style="width:20px; height:20px;">
+                </div>
             </div>
 
             <input type="text" id="editTitle" placeholder="Name">
@@ -261,7 +252,6 @@
     </div>
 
     <script>
-        // === 1. FIREBASE CONFIG (REPLACE WITH YOUR KEYS) ===
         const firebaseConfig = { 
             apiKey: "AIzaSyCjb15aH65juySeyZUA4yTPrLx7HosP1Cs", 
             authDomain: "shm-gadget-zone-f3769.firebaseapp.com", 
@@ -272,20 +262,13 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        const analytics = firebase.analytics();
 
-        // Enable Offline Persistence
-        db.enablePersistence().catch(err => {
-            if (err.code == 'failed-precondition') { console.warn("Multiple tabs open"); } 
-            else if (err.code == 'unimplemented') { console.warn("Browser not supported"); }
-        });
+        db.enablePersistence().catch(err => { console.warn("Persistence Error", err.code); });
 
-        // === 2. STATE & VARIABLES ===
         let imagesArray = [];
-        let allOrders = []; // Store locally for filtering
+        let allOrders = [];
         let allProducts = [];
 
-        // === 3. AUTH LOGIC ===
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginOverlay').style.display = 'none';
@@ -308,7 +291,6 @@
 
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
-                // Overlay closes via onAuthStateChanged
             } catch (error) {
                 err.innerText = "Access Denied: " + error.message;
                 err.style.display = 'block';
@@ -321,7 +303,6 @@
             window.location.reload();
         }
 
-        // === 4. APP INITIALIZATION ===
         function initApp() {
             loadOrders();
             loadStock();
@@ -336,7 +317,6 @@
             e.currentTarget.classList.add('active');
         }
 
-        // === 5. ORDERS MANAGEMENT ===
         function loadOrders() {
             db.collection("orders").orderBy("Date", "desc").onSnapshot(snap => {
                 allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -434,7 +414,6 @@
             }
         }
 
-        // === 6. STOCK MANAGEMENT ===
         function loadStock() {
             db.collection("products").onSnapshot(snap => {
                 allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -451,6 +430,7 @@
                 list.innerHTML += `
                 <div class="stock-item">
                     ${p.isFlashSale ? '<div class="flash-badge"><i class="fas fa-bolt"></i> FLASH</div>' : ''}
+                    ${p.inStock === false ? '<div class="out-badge">OUT OF STOCK</div>' : ''}
                     <img src="${p.image}" loading="lazy">
                     <b class="text-xs" style="line-height:1.2; height:28px; overflow:hidden;">${p.title}</b>
                     <div style="color:var(--primary); font-weight:800; font-size:13px; margin:5px 0;">৳${p.price}</div>
@@ -472,7 +452,6 @@
             } catch(e) { showToast("Failed to delete", "error"); }
         }
 
-        // === 7. ADD & EDIT PRODUCT ===
         async function handleImages(input) {
             const files = Array.from(input.files).slice(0, 3);
             imagesArray = []; 
@@ -524,6 +503,7 @@
                     image3: imagesArray[2] || "",
                     description: document.getElementById('pDesc').value,
                     isFlashSale: document.getElementById('pFlash').checked,
+                    inStock: document.getElementById('pStock').checked,
                     promo: {
                         code: document.getElementById('pSecretCode').value || null,
                         val: Number(document.getElementById('pSecretVal').value) || 0,
@@ -536,7 +516,6 @@
                 await db.collection("products").add(productData);
                 showToast("Product Published!", "success");
                 
-                // Reset Form
                 document.getElementById('pName').value = "";
                 document.getElementById('pDesc').value = "";
                 imagesArray = [];
@@ -549,13 +528,16 @@
             setLoading(btn, false);
         }
 
-        // Edit Modal Logic
         function openEditModal(p) {
             document.getElementById('editId').value = p.id;
             document.getElementById('editTitle').value = p.title;
             document.getElementById('editPrice').value = p.price;
             document.getElementById('editDesc').value = p.description;
             document.getElementById('editFlash').checked = p.isFlashSale;
+            
+            // Check if stock is explicitly false, otherwise assume true
+            document.getElementById('editStock').checked = p.inStock !== false;
+            
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -571,7 +553,8 @@
                     title: document.getElementById('editTitle').value,
                     price: Number(document.getElementById('editPrice').value),
                     description: document.getElementById('editDesc').value,
-                    isFlashSale: document.getElementById('editFlash').checked
+                    isFlashSale: document.getElementById('editFlash').checked,
+                    inStock: document.getElementById('editStock').checked
                 });
                 showToast("Product Updated", "success");
                 closeEditModal();
@@ -580,7 +563,6 @@
             setLoading(btn, false);
         }
 
-        // === 8. CONFIG & LOGS ===
         function loadConfig() {
             db.collection("settings").doc("maintenance").onSnapshot(doc => {
                 const enabled = doc.exists ? doc.data().enabled : false;
@@ -618,7 +600,6 @@
             } catch(e) { showToast("Failed to set promo", "error"); }
         }
 
-        // Logs
         function logAction(msg) {
             db.collection("admin_logs").add({
                 msg: msg,
@@ -639,7 +620,6 @@
             });
         }
 
-        // === 9. UTILITIES ===
         function setLoading(btn, isLoading) {
             const txt = btn.querySelector('.btn-text');
             const spin = btn.querySelector('.spinner');
@@ -664,7 +644,6 @@
         }
 
         function formatDate(str) {
-            // Handles both Firestore Timestamp and string dates
             if(!str) return "";
             if(str.seconds) return new Date(str.seconds * 1000).toLocaleDateString();
             return str;
