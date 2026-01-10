@@ -319,10 +319,13 @@
                 </label>
             </div>
 
-            <div class="promo-box">
-                <input type="text" id="promoCode" class="form-input" placeholder="Promo Code">
-                <button class="promo-btn" onclick="applyPromo()">APPLY</button>
-            </div>
+<div class="promo-box">
+    <input type="text" id="promoCode" class="form-input" placeholder="Promo Code">
+    <button class="promo-btn" onclick="applyPromo()">APPLY</button>
+</div>
+<div id="promo-status" style="font-size: 12px; margin-top: -15px; margin-bottom: 15px; font-weight: 600; text-align: left;"></div>
+
+
 
             <div style="border:1px solid var(--border); padding:15px; border-radius:12px; margin-top:10px;">
                 <div class="summary-row"><span>Product Price</span><span id="sPrice" style="font-weight:600;">৳0</span></div>
@@ -501,7 +504,6 @@ function renderGrid() {
         grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px; color:#888;"><i class="fas fa-box-open" style="font-size:40px; margin-bottom:10px;"></i><p>No products found.</p></div>`;
     } else {
         grid.innerHTML = pageItems.map(p => {
-            // Updated Stock logic to match Admin Panel
             const isAvailable = p.inStock !== false; 
             return `
                 <div class="prod-card">
@@ -511,7 +513,7 @@ function renderGrid() {
                         <div class="prod-title">${p.title}</div>
                         <div class="prod-price">৳${p.price}</div>
                         <button class="btn-main" ${!isAvailable ? 'disabled' : ''} onclick="openCheckout('${p.id}')">
-                            ${!isAvailable ? 'OUT OF STOCK' : 'ORDER NOW'}
+                            ${!isAvailable ? 'ORDER NOW' : 'ORDER NOW'}
                         </button>
                     </div>
                 </div>
@@ -591,7 +593,10 @@ function openCheckout(id) {
     appState.cartItem = p;
     appState.discount = 0;
     appState.deliveryCharge = 80;
+    
     document.getElementById('promoCode').value = '';
+    document.getElementById('promo-status').innerText = ''; 
+    
     document.querySelector('input[name="delivery"][value="80"]').checked = true;
     updateCartTotal();
     openModal('checkoutModal');
@@ -610,13 +615,51 @@ function updateCartTotal() {
 
 async function applyPromo() {
     const code = document.getElementById('promoCode').value.trim();
-    if(!code) return showToast("Enter a code", "error");
+    const statusLabel = document.getElementById('promo-status');
+    
+    if(!code) {
+        statusLabel.innerText = "Please enter a code";
+        statusLabel.style.color = "var(--red)";
+        return;
+    }
+
+    statusLabel.innerText = "Checking...";
+    statusLabel.style.color = "var(--text)";
+
     try {
         const snap = await db.collection("promos").where("code", "==", code).get();
-        if(snap.empty) { appState.discount = 0; showToast("Invalid Coupon", "error"); }
-        else { appState.discount = parseInt(snap.docs[0].data().val); showToast("Coupon Applied!", "success"); }
+        if(snap.empty) {
+            appState.discount = 0;
+            statusLabel.innerText = "❌ Invalid Promo Code";
+            statusLabel.style.color = "var(--red)";
+        } else {
+            const promoData = snap.docs[0].data();
+            appState.discount = parseInt(promoData.val);
+            statusLabel.innerText = "✅ Discount Applied: ৳" + appState.discount;
+            statusLabel.style.color = "var(--green)";
+        }
         updateCartTotal();
-    } catch(e) { console.error(e); }
+    } catch(e) { 
+        statusLabel.innerText = "⚠️ Error connecting to database";
+        console.error(e);
+    }
+}
+
+function sendOrderEmail(customerName, customerPhone, customerAddress, orderTotal, itemsList) {
+    const formspreeUrl = "https://formspree.io/f/mgovgpbg";
+    const emailData = {
+        customer: customerName,
+        phone: customerPhone,
+        address: customerAddress,
+        total: "৳" + orderTotal,
+        items: itemsList
+    };
+
+    fetch(formspreeUrl, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(emailData)
+    }).catch(e => console.error("Email Error:", e));
 }
 
 async function placeOrder() {
@@ -642,6 +685,7 @@ async function placeOrder() {
             status: "Pending" 
         };
         const ref = await db.collection("orders").add(orderData);
+        sendOrderEmail(name, phone, addr, finalTotal, appState.cartItem.title);
         closeModal('checkoutModal');
         showToast("Order Placed!", "success");
         const waMsg = `*New Order* %0AID: ${ref.id.substring(0,6).toUpperCase()} %0AItem: ${appState.cartItem.title} %0ATotal: ${finalTotal} Tk`;
