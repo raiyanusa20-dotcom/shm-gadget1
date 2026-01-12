@@ -1,0 +1,18 @@
+# Welcome to SHM GADGET ZONE Robots.txt
+User-agent: *
+
+# Block Admin and Private files from Google Search
+Disallow: /admin.html
+Disallow: /config/
+Disallow: /private/
+
+# Block E-commerce functional pages (if you have them)
+Disallow: /cart
+Disallow: /checkout
+Disallow: /my-account
+
+# Allow everything else to be indexed
+Allow: /
+
+# Link to your Sitemap
+Sitemap: https://raiyanusa20-dotcom.github.io/shm-gadget1/sitemap.xml
