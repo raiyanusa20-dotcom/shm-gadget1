@@ -291,8 +291,17 @@
 
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
+                document.getElementById('loginOverlay').style.display = 'none';
+                showToast("Login Successful! Loading...", "success");
+                
+                // Reload to refresh connections
+                setTimeout(() => {
+                    window.location.reload(); 
+                }, 500);
+
             } catch (error) {
-                err.innerText = "Access Denied: " + error.message;
+                console.error("Login Error:", error);
+                err.innerText = "Error: " + error.message;
                 err.style.display = 'block';
                 setLoading(btn, false);
             }
@@ -534,10 +543,7 @@
             document.getElementById('editPrice').value = p.price;
             document.getElementById('editDesc').value = p.description;
             document.getElementById('editFlash').checked = p.isFlashSale;
-            
-            // Check if stock is explicitly false, otherwise assume true
             document.getElementById('editStock').checked = p.inStock !== false;
-            
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -584,20 +590,28 @@
         }
 
         async function setGlobalPromo() {
-            const code = document.getElementById('promoCode').value;
+            const code = document.getElementById('promoCode').value.trim();
             const val = document.getElementById('promoVal').value;
-            if(!code) return showToast("Enter a code", "error");
+
+            if(!code || !val) return showToast("Enter Code and Discount Amount", "error");
 
             try {
-                await db.collection("settings").doc("promo").set({
+                await db.collection("promos").add({
                     code: code,
-                    value: Number(val),
-                    active: true,
-                    updatedAt: new Date()
+                    val: Number(val),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                showToast("Global Promo Active!", "success");
-                logAction(`Set global promo: ${code}`);
-            } catch(e) { showToast("Failed to set promo", "error"); }
+
+                showToast(`Promo Code "${code}" Created!`, "success");
+                logAction(`Created promo: ${code}`);
+                
+                document.getElementById('promoCode').value = "";
+                document.getElementById('promoVal').value = "";
+                
+            } catch(e) { 
+                console.error(e);
+                showToast("Failed to set promo", "error"); 
+            }
         }
 
         function logAction(msg) {
@@ -652,7 +666,8 @@
         function exportCSV() {
             let csv = "ID,Date,Product,Customer,Mobile,Total,Status\n";
             allOrders.forEach(o => {
-                csv += `${o.id},"${o.Date}","${o.Product}","${o.Customer}","${o.Mobile}",${o.Total},${o.Status}\n`;
+                // Fixed case sensitivity of 'status' here
+                csv += `${o.id},"${o.Date}","${o.Product}","${o.Customer}","${o.Mobile}",${o.Total},${o.status}\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
